@@ -67,8 +67,21 @@ export const generateBite = async (req, res) => {
     const distractorRule = await mcpService.fetchNote("[유형별 오답 설계 공식]");
     const referenceSample = await mcpService.fetchNote("[토플 문제풀이 핵심로직]");
 
-    const masterPromptPath = path.resolve('/Users/kazisis/Toefl-study/Toefl/숏폼 토플 마스터 프롬프트.md');
-    const masterPrompt = await fs.readFile(masterPromptPath, 'utf8');
+    const masterPromptPath = path.join(process.cwd(), '..', 'Toefl', '숏폼 토플 마스터 프롬프트.md');
+    // For Render compatibility (deployment structure might vary)
+    const alternativePromptPath = path.resolve(process.cwd(), 'Toefl', '숏폼 토플 마스터 프롬프트.md');
+    
+    let masterPrompt = "";
+    try {
+      masterPrompt = await fs.readFile(masterPromptPath, 'utf8');
+    } catch (e) {
+      try {
+        masterPrompt = await fs.readFile(alternativePromptPath, 'utf8');
+      } catch (e2) {
+        console.error("Master prompt not found, using fallback short prompt");
+        masterPrompt = "Generate a TOEFL bite-sized question. JSON format.";
+      }
+    }
 
     const systemPrompt = `
 ${masterPrompt}
@@ -137,9 +150,9 @@ export const saveResult = async (req, res) => {
   try {
     const { userId, questionId, userAnswer, isCorrect, timeSpent = 0 } = req.body;
     
-    if (!questionId) {
-      console.error("[Save-Result] Error: questionId is missing in request body");
-      return res.status(400).json({ success: false, error: "questionId is required" });
+    if (!questionId || String(questionId).startsWith('mock-')) {
+      console.log("[Save-Result] Skipping save for mock/invalid ID:", questionId);
+      return res.json({ success: true, message: "Mock result skipped" });
     }
 
     const { data: result, error } = await supabase
