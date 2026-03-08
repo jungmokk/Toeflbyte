@@ -114,10 +114,17 @@ ${lengthGuideline}
       success: true,
       data: {
         ...result,
-        id: savedQuestion?.id
+        id: savedQuestion?.id || result.id || 'gen-' + Date.now(),
+        topic: topic
       },
       reused: false,
-      credits_used: 5
+      credits_used: 5,
+      debug: {
+        activeUserId,
+        solvedCount: solvedIds.length,
+        poolSize: questions?.length || 0,
+        unsolvedCount: unsolvedQuestions.length
+      }
     });
 
   } catch (error) {

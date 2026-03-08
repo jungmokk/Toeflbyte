@@ -176,7 +176,8 @@ const Test = ({ navigation, route }) => {
         Alert.alert('시간 초과!', '90초가 지났습니다. 오답 처리되었습니다. 일타강사의 피드백을 확인하세요.');
       }
     } catch (error) {
-      console.error('Save Result Error:', error);
+      console.error('Save Result Error (Client-side):', error);
+      Alert.alert('저장 실패', '결과를 서버에 저장하지 못했습니다. (동일 문제가 반복될 수 있습니다)');
     }
   };
 
