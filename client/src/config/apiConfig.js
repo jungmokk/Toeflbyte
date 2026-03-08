@@ -14,8 +14,8 @@ const getBaseUrl = () => {
       : 'http://localhost:5001/api';
   }
 
-  // Fallback for production (Adjust this to your Render/Railway URL later)
-  return 'https://toefl-byte-api.onrender.com/api'; 
+  // Fallback for production
+  return 'https://toeflbyte.onrender.com/api'; 
 };
 
 export const API_BASE_URL = getBaseUrl();
