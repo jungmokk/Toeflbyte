@@ -7,11 +7,13 @@ import useBite from '../../hooks/useBite';
 import useVocab from '../../hooks/useVocab';
 import useStore from '../../store/useStore';
 import { ChevronLeft, Info, CheckCircle2, XCircle, ChevronRight, HelpCircle, Zap, Bookmark, CheckCircle, Plus } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { API_URL } from '../../api/config';
 
 const ReviewDetail = ({ navigation, route }) => {
   const { bite } = route.params;
+  const { t } = useTranslation();
   const { saveWord } = useVocab();
   const parsedBite = typeof bite.question.content_json === 'string' 
     ? JSON.parse(bite.question.content_json) 
@@ -39,7 +41,7 @@ const ReviewDetail = ({ navigation, route }) => {
       setWordMeaning(response.data);
     } catch (error) {
       console.error('[Define-Word] API Error:', error.message);
-      setWordMeaning({ meaning: '단어 정보를 가져오지 못했습니다.', example: '' });
+      setWordMeaning({ meaning: t('review_detail.define_error'), example: '' });
     } finally {
       setWordLoading(false);
     }
@@ -50,12 +52,12 @@ const ReviewDetail = ({ navigation, route }) => {
     try {
       await saveWord(selectedWord, wordMeaning.meaning, parsedBite.passage);
       setIsSaved(true);
-      Alert.alert('저장 완료', `'${selectedWord}' 단어가 내 단어장에 저장되었습니다.`);
+      Alert.alert(t('chat.save_success'), t('chat.save_msg', { word: selectedWord }));
     } catch (error) {
       if (error.response?.status === 400) {
-        Alert.alert('알림', '이미 저장된 단어입니다.');
+        Alert.alert(t('common.confirm'), t('chat.already_saved'));
       } else {
-        Alert.alert('오류', '저장 중 문제가 발생했습니다.');
+        Alert.alert(t('common.error'), t('vocabulary.save_error') || t('chat.save_error'));
       }
     }
   };
@@ -66,7 +68,7 @@ const ReviewDetail = ({ navigation, route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ChevronLeft color={COLORS.text} size={28} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>오답 분석</Text>
+        <Text style={styles.headerTitle}>{t('review_detail.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -80,7 +82,7 @@ const ReviewDetail = ({ navigation, route }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Info size={18} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>지문 (Passage)</Text>
+            <Text style={styles.sectionTitle}>{t('review_detail.passage')}</Text>
           </View>
           <View style={styles.passageCard}>
             <View style={styles.passageWrapper}>
@@ -101,7 +103,7 @@ const ReviewDetail = ({ navigation, route }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <HelpCircle size={18} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>문제 및 선택지</Text>
+            <Text style={styles.sectionTitle}>{t('review_detail.question_options')}</Text>
           </View>
           <View style={styles.questionCard}>
             <Text style={styles.questionText}>{parsedBite.question}</Text>
@@ -134,11 +136,11 @@ const ReviewDetail = ({ navigation, route }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Info size={18} color={COLORS.success} />
-            <Text style={[styles.sectionTitle, { color: COLORS.success }]}>일타강사의 정밀 해설</Text>
+            <Text style={[styles.sectionTitle, { color: COLORS.success }]}>{t('review_detail.instructor_explanation')}</Text>
           </View>
           <View style={styles.explanationCard}>
             <Text style={styles.explanationText}>
-              {parsedBite.distractor_logic?.instructor_comment || parsedBite.explanation || "이 문제에 대한 상세 해설이 생성되었습니다."}
+              {parsedBite.distractor_logic?.instructor_comment || parsedBite.explanation || t('review_detail.default_explanation')}
             </Text>
           </View>
         </View>
@@ -148,7 +150,7 @@ const ReviewDetail = ({ navigation, route }) => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Bookmark size={18} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>오늘의 빈출 어휘</Text>
+              <Text style={styles.sectionTitle}>{t('review_detail.key_vocab')}</Text>
             </View>
             <View style={styles.keywordContainer}>
               {parsedBite.keyWords.map((kw, idx) => (
@@ -177,7 +179,7 @@ const ReviewDetail = ({ navigation, route }) => {
           style={styles.chatButton}
           onPress={() => navigation.navigate('Chat', { context: parsedBite })}
         >
-          <Text style={styles.chatButtonText}>일타강사에게 더 물어보기</Text>
+          <Text style={styles.chatButtonText}>{t('review_detail.ask_tutor')}</Text>
           <ChevronRight color={COLORS.white} size={20} />
         </TouchableOpacity>
       </ScrollView>
@@ -214,7 +216,7 @@ const ReviewDetail = ({ navigation, route }) => {
               <ActivityIndicator color={COLORS.primary} style={{marginVertical: 40}} />
             ) : (
               <ScrollView>
-                <Text style={styles.drawerMeaning}>{wordMeaning?.meaning || '로딩 중...'}</Text>
+                <Text style={styles.drawerMeaning}>{wordMeaning?.meaning || t('common.loading')}</Text>
                 {wordMeaning?.example && (
                   <Text style={styles.drawerExample}>{wordMeaning.example}</Text>
                 )}
@@ -222,7 +224,7 @@ const ReviewDetail = ({ navigation, route }) => {
                   style={styles.closeDrawerButton}
                   onPress={() => setSelectedWord(null)}
                 >
-                  <Text style={styles.closeDrawerText}>배우기 완료</Text>
+                  <Text style={styles.closeDrawerText}>{t('review_detail.learn_done')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             )}

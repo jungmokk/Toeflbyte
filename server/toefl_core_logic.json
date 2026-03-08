@@ -1,0 +1,63 @@
+{
+  "core_logic": {
+    "main_topic": "Theories about the colonization of the Americas via the Northwest Coast",
+    "key_theories": [
+      {
+        "theory": "Traditional land bridge migration via Beringia",
+        "details": "Accepted theory of migration across Bering Strait during last Ice Age",
+        "challenges": "Questioned by Glen MacDonald's evidence showing incorrect radiocarbon dates"
+      },
+      {
+        "theory": "Coastal migration route using watercraft",
+        "details": "Alternative theory suggesting migration along Gulf of Alaska and Northwest Coast as early as 16,000 years ago",
+        "supporters": "Knut Fladmark (most influential proponent)",
+        "evidence": [
+          "Geologic studies showing deglaciation by 13,000-16,000 years ago",
+          "Diversity of Native American languages along west coast",
+          "Remains of large land animals found in southeastern Alaska",
+          "Ice-free coastal corridors"
+        ]
+      }
+    ],
+    "chronological_development": "Presents traditional theory first, then introduces challenges, then presents alternative theory with supporting evidence"
+  },
+  "style": {
+    "academic_tone": "Formal, objective academic writing",
+    "vocabulary_level": "Advanced academic vocabulary (e.g., 'paleoecologist', 'deglaciation', 'continental shelf')",
+    "sentence_structure": "Complex sentences with multiple clauses",
+    "evidence_based": "Heavy reliance on scientific evidence, dates, and expert opinions",
+    "comparative": "Contrasts traditional and alternative theories"
+  },
+  "structure": {
+    "overall_format": "Reading passage followed by comprehension questions",
+    "passage_organization": [
+      "Introduction of traditional theory",
+      "Challenge to traditional theory",
+      "Presentation of alternative theory",
+      "Supporting evidence for alternative theory",
+      "Detailed examination of evidence"
+    ],
+    "question_types": [
+      "Detail questions (e.g., 'According to paragraph 1...')",
+      "Vocabulary in context questions",
+      "Paragraph purpose questions",
+      "Inference questions",
+      "Sentence simplification questions"
+    ],
+    "question_distribution": "Questions follow paragraph order, with multiple questions per paragraph"
+  },
+  "rules_of_question_design": {
+    "text_dependent": "All questions require close reading of specific passages",
+    "paraphrase_based": "Correct answers often paraphrase passage content rather than using exact wording",
+    "distractor_characteristics": [
+      "Plausible but incorrect interpretations",
+      "Information from wrong paragraphs",
+      "Opposite meanings",
+      "Partial truths with missing key elements"
+    ],
+    "vocabulary_focus": "Includes questions testing understanding of academic vocabulary in context",
+    "hierarchical_difficulty": "Starts with factual recall, progresses to inference and synthesis",
+    "paragraph_specific": "Questions clearly reference specific paragraphs",
+    "evidence_requirement": "Correct answers must be directly supported by passage evidence"
+  }
+}

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOEFL Byte - 계정 및 데이터 삭제 요청</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --primary: #7C2BEE;
+            --background: #0A0E21;
+            --card: #1E1B4B;
+            --text: #FFFFFF;
+            --text-secondary: #94A3B8;
+            --error: #EF4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .alert-box {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--error);
+            padding: 15px;
+            text-align: left;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+
+        .alert-box strong {
+            color: var(--error);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .data-list {
+            text-align: left;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .data-list ul {
+            padding-left: 20px;
+            color: var(--text-secondary);
+        }
+
+        .button {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 14px 30px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s, background-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .button:hover {
+            background-color: #6D24D0;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">TOEFL Byte</div>
+        <h1>계정 및 데이터 삭제 요청</h1>
+        <p>TOEFL Byte는 사용자의 개인정보 보호를 최우선으로 생각합니다. 계정 삭제 시 다음 데이터가 완전히 제거됩니다.</p>
+        
+        <div class="data-list">
+            <ul>
+                <li>계정 정보 (이메일, 프로필)</li>
+                <li>학습 이력 및 문제 풀이 결과</li>
+                <li>저장된 나만의 단어장 데이터</li>
+                <li>보유 중인 크레딧 정보</li>
+            </ul>
+        </div>
+
+        <div class="alert-box">
+            <strong>주의사항</strong>
+            삭제된 데이터는 복구할 수 없으며, 기존에 구매하거나 보유한 크레딧은 환불되지 않습니다.
+        </div>
+
+        <a href="mailto:support@toeflbyte.com?subject=TOEFL Byte 계정 삭제 요청&body=삭제를 원하는 계정 이메일: " class="button">
+            삭제 요청 메일 보내기
+        </a>
+
+        <div class="footer">
+            문의: support@toeflbyte.com<br>
+            © 2026 TOEFL Byte. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

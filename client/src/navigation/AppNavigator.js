@@ -10,6 +10,7 @@ import ReviewDetail from '../screens/Review/ReviewDetail';
 import VocabularyNote from '../screens/Review/VocabularyNote';
 import Settings from '../screens/Settings/Settings';
 import Login from '../screens/Auth/Login';
+import Onboarding from '../screens/Home/Onboarding';
 import { Home as HomeIcon, BookOpen, Settings as SettingsIcon } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import useStore from '../store/useStore';
@@ -45,7 +46,7 @@ const MainTabs = () => {
 };
 
 const AppNavigator = () => {
-  const { session, setSession, setUserId } = useStore();
+  const { session, setSession, setUserId, hasCompletedOnboarding } = useStore();
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -77,6 +78,9 @@ const AppNavigator = () => {
           <Stack.Screen name="Login" component={Login} />
         ) : (
           <>
+            {!hasCompletedOnboarding && (
+              <Stack.Screen name="Onboarding" component={Onboarding} />
+            )}
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="Test" component={Test} />
             <Stack.Screen name="Chat" component={Chat} options={{ presentation: 'modal' }} />

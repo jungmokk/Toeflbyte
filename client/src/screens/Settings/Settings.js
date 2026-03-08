@@ -33,23 +33,67 @@ import useStore from '../../store/useStore';
 import useUser from '../../hooks/useUser';
 import { supabase } from '../../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
+import { useTranslation } from 'react-i18next';
+import { COLORS } from '../../constants/theme';
+
+import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
+
+const adUnitId = process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID || TestIds.REWARDED;
 
 const Settings = () => {
   const { credits, persona, setPersona, timerEnabled, setTimerEnabled, isPremium, isAdmin, resetStore } = useStore();
+  const { t } = useTranslation();
   const { rechargeCredits, upgradePremium, syncUser, claimReward } = useUser();
   const [modalVisible, setModalVisible] = useState(false);
-  const [adModalVisible, setAdModalVisible] = useState(false);
-  const [adCountdown, setAdCountdown] = useState(5);
   const [loading, setLoading] = useState(false);
   const [adminMode, setAdminMode] = useState(isAdmin);
   const [titleClickCount, setTitleClickCount] = useState(0);
+
+  // Rewarded Ad Reference
+  const rewardedRef = React.useRef(null);
+  const [adLoaded, setAdLoaded] = useState(false);
+
+  React.useEffect(() => {
+    syncUser();
+
+    // Initialize Rewarded Ad
+    const rewarded = RewardedAd.createForAdRequest(adUnitId, {
+      requestNonPersonalizedAdsOnly: true,
+    });
+
+    const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      setAdLoaded(true);
+    });
+
+    const unsubscribeEarned = rewarded.addAdEventListener(
+      RewardedAdEventType.EARNED_REWARD,
+      reward => {
+        console.log('User earned reward of ', reward);
+        handleAdComplete(reward.amount || 5);
+      },
+    );
+
+    const unsubscribeClosed = rewarded.addAdEventListener(RewardedAdEventType.CLOSED, () => {
+      setAdLoaded(false);
+      rewarded.load(); // Load next ad
+    });
+
+    rewarded.load();
+    rewardedRef.current = rewarded;
+
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeEarned();
+      unsubscribeClosed();
+    };
+  }, []);
 
   const handleTitleClick = () => {
     const newCount = titleClickCount + 1;
     setTitleClickCount(newCount);
     if (newCount >= 5) {
       setAdminMode(true);
-      alert('관리자 모드가 활성화되었습니다. (크레딧 무제한 충전 가능)');
+      alert(t('settings.admin_mode_activated')); // I should add this key or just use a message
       setTitleClickCount(0);
     }
   };
@@ -58,9 +102,9 @@ const Settings = () => {
     try {
       setLoading(true);
       await rechargeCredits(10000, 'admin_gift');
-      alert('관리자 권한으로 10,000 크레딧이 충전되었습니다!');
+      alert(t('settings.admin_charge_success'));
     } catch (error) {
-      alert('충전에 실패했습니다.');
+      alert(t('settings.admin_charge_fail'));
     } finally {
       setLoading(false);
     }
@@ -75,10 +119,6 @@ const Settings = () => {
   const [notiReward, setNotiReward] = useState(true);
   const [nickname, setNickname] = useState('');
 
-  React.useEffect(() => {
-    syncUser();
-  }, []);
-
   const handleUpdateProfile = () => {
     alert('프로필 정보가 저장되었습니다.');
     setProfileModalVisible(false);
@@ -86,18 +126,18 @@ const Settings = () => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      '계정 탈퇴',
-      '정말로 계정을 삭제하시겠습니까? 모든 학습 데이터와 크레딧이 영구히 삭제됩니다.',
+      t('settings.account_delete'),
+      t('settings.delete_account_confirm'),
       [
-        { text: '취소', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { 
-          text: '삭제', 
+          text: t('common.delete'), 
           style: 'destructive', 
           onPress: async () => {
             // In a real app, call backend to delete row
             await supabase.auth.signOut();
             resetStore();
-            alert('계정이 삭제되었습니다.');
+            alert(t('settings.account_deleted_msg')); // add this or just msg
           }
         }
       ]
@@ -106,12 +146,12 @@ const Settings = () => {
 
   const handleLogout = async () => {
     Alert.alert(
-      '로그아웃',
-      '정말로 로그아웃 하시겠습니까?',
+      t('settings.logout'),
+      t('settings.logout_confirm'),
       [
-        { text: '취소', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { 
-          text: '로그아웃', 
+          text: t('settings.logout'), 
           style: 'destructive', 
           onPress: async () => {
             await supabase.auth.signOut();
@@ -123,8 +163,8 @@ const Settings = () => {
   };
 
   const personaOptions = [
-    { id: 'tsun', title: '츤데레 팩폭 일타강사', desc: '강력한 팩폭으로 정신이 번쩍 들게 합니다.' },
-    { id: 'kind', title: '친절하고 꼼꼼한 과외쌤', desc: '다정한 말투로 원리부터 차근차근 설명합니다.' }
+    { id: 'tsun', title: t('settings.persona_tsun_title'), desc: t('settings.persona_tsun_desc') },
+    { id: 'kind', title: t('settings.persona_kind_title'), desc: t('settings.persona_kind_desc') }
   ];
 
   const chargeOptions = [
@@ -137,10 +177,10 @@ const Settings = () => {
     try {
       setLoading(true);
       await rechargeCredits(amount, 'mock_plan');
-      alert(`${amount} 크레딧이 충전되었습니다!`);
+      alert(t('settings.charge_success', { amount }));
       setModalVisible(false);
     } catch (error) {
-      alert('충전에 실패했습니다.');
+      alert(t('settings.admin_charge_fail'));
     } finally {
       setLoading(false);
     }
@@ -150,36 +190,30 @@ const Settings = () => {
     try {
       setLoading(true);
       await upgradePremium();
-      alert('프리미엄 회원이 되신 것을 환영합니다!');
+      alert(t('settings.upgrade_success'));
     } catch (error) {
-      alert('업그레이드에 실패했습니다.');
+      alert(t('settings.admin_charge_fail'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleWatchAd = () => {
-    setAdModalVisible(true);
-    setAdCountdown(5);
-    const interval = setInterval(() => {
-      setAdCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    if (adLoaded) {
+      rewardedRef.current.show();
+    } else {
+      Alert.alert(t('common.confirm'), t('settings.ad_not_ready'));
+      rewardedRef.current.load();
+    }
   };
 
-  const handleAdComplete = async () => {
+  const handleAdComplete = async (amount = 5) => {
     try {
       setLoading(true);
-      await claimReward(5);
-      alert('광고 시청 보상으로 5 크레딧이 지급되었습니다!');
-      setAdModalVisible(false);
+      await claimReward(amount);
+      alert(t('settings.ad_reward_success', { amount }));
     } catch (error) {
-      alert('보상 지급에 실패했습니다.');
+      alert(t('settings.admin_charge_fail'));
     } finally {
       setLoading(false);
     }
@@ -198,20 +232,20 @@ const Settings = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity onPress={handleTitleClick} activeOpacity={1}>
-          <Text style={styles.title}>설정</Text>
+          <Text style={styles.title}>{t('settings.title')}</Text>
         </TouchableOpacity>
 
         {/* Admin Mode Section */}
         {adminMode && (
           <View style={[styles.section, { backgroundColor: '#1E1B4B', padding: 20, borderRadius: 16, borderLeftWidth: 4, borderLeftColor: '#818CF8' }]}>
-            <Text style={[styles.sectionTitle, { color: '#818CF8' }]}>🛠 관리자 모드</Text>
+            <Text style={[styles.sectionTitle, { color: '#818CF8' }]}>🛠 {t('settings.admin_mode')}</Text>
             <TouchableOpacity 
               style={[styles.chargeButton, { backgroundColor: '#4F46E5', marginTop: 10 }]}
               onPress={handleAdminCharge}
               disabled={loading}
             >
               <Zap size={20} color="#FFFFFF" />
-              <Text style={styles.chargeButtonText}>10,000 크레딧 즉시 충전</Text>
+              <Text style={styles.chargeButtonText}>{t('settings.admin_charge')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -220,11 +254,11 @@ const Settings = () => {
         <View style={styles.creditCard}>
           <View>
             <View style={styles.row}>
-              <Text style={styles.creditLabel}>내 잔여 크레딧</Text>
+              <Text style={styles.creditLabel}>{t('settings.credits_label')}</Text>
               {isPremium && (
                 <View style={styles.premiumBadge}>
                   <Crown size={12} color="#FFFFFF" />
-                  <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+                  <Text style={styles.premiumBadgeText}>{t('chat.premium')}</Text>
                 </View>
               )}
             </View>
@@ -235,7 +269,7 @@ const Settings = () => {
             onPress={() => setModalVisible(true)}
           >
             <PlusCircle size={20} color="#FFFFFF" />
-            <Text style={styles.chargeButtonText}>충전하기</Text>
+            <Text style={styles.chargeButtonText}>{t('settings.charge')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -249,8 +283,8 @@ const Settings = () => {
             <View style={styles.premiumBannerLeft}>
               <Crown size={24} color="#F59E0B" />
               <View style={styles.premiumBannerInfo}>
-                <Text style={styles.premiumBannerTitle}>프리미엄 멤버십 오픈!</Text>
-                <Text style={styles.premiumBannerDesc}>무제한 쉐도잉 & 500P 즉시 지급</Text>
+                <Text style={styles.premiumBannerTitle}>{t('settings.premium_banner_title')}</Text>
+                <Text style={styles.premiumBannerDesc}>{t('settings.premium_banner_desc')}</Text>
               </View>
             </View>
             <Zap size={20} color="#F59E0B" />
@@ -259,7 +293,7 @@ const Settings = () => {
 
         {/* Free Credits Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>무료 크레딧 받기</Text>
+          <Text style={styles.sectionTitle}>{t('settings.free_credits_title')}</Text>
           <TouchableOpacity 
             style={styles.adButton}
             onPress={handleWatchAd}
@@ -267,8 +301,8 @@ const Settings = () => {
           >
             <Zap size={20} color="#3B82F6" />
             <View style={styles.adButtonInfo}>
-              <Text style={styles.adButtonTitle}>광고 보고 5P 받기</Text>
-              <Text style={styles.adButtonDesc}>동영상 광고를 시청하고 무료로 학습하세요.</Text>
+              <Text style={styles.adButtonTitle}>{t('settings.watch_ad_title')}</Text>
+              <Text style={styles.adButtonDesc}>{t('settings.watch_ad_desc')}</Text>
             </View>
             <ChevronRight size={20} color="#64748B" />
           </TouchableOpacity>
@@ -280,9 +314,9 @@ const Settings = () => {
             <View style={styles.toggleInfo}>
               <View style={styles.row}>
                 <Timer size={22} color="#F8FAFC" style={{ marginRight: 10 }} />
-                <Text style={styles.sectionTitle}>실전 타이머 압박 모드</Text>
+                <Text style={styles.sectionTitle}>{t('settings.timer_pressure_title')}</Text>
               </View>
-              <Text style={styles.optionDesc}>1문단 풀이 시 90초 타이머를 적용합니다.</Text>
+              <Text style={styles.optionDesc}>{t('settings.timer_pressure_desc')}</Text>
             </View>
             <Switch
               trackColor={{ false: '#334155', true: '#3B82F6' }}
@@ -296,7 +330,7 @@ const Settings = () => {
 
         {/* AI Persona Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>AI 강사 페르소나 설정</Text>
+          <Text style={styles.sectionTitle}>{t('settings.persona_title')}</Text>
           {personaOptions.map((opt) => (
             <TouchableOpacity 
               key={opt.id} 
@@ -326,7 +360,7 @@ const Settings = () => {
           >
             <View style={styles.menuItemLeft}>
               <User size={20} color="#94A3B8" />
-              <Text style={styles.menuItemText}>프로필 설정</Text>
+              <Text style={styles.menuItemText}>{t('settings.profile_settings')}</Text>
             </View>
             <ChevronRight size={20} color="#64748B" />
           </TouchableOpacity>
@@ -337,7 +371,7 @@ const Settings = () => {
           >
             <View style={styles.menuItemLeft}>
               <Bell size={20} color="#94A3B8" />
-              <Text style={styles.menuItemText}>알림 설정</Text>
+              <Text style={styles.menuItemText}>{t('settings.notification_settings')}</Text>
             </View>
             <ChevronRight size={20} color="#64748B" />
           </TouchableOpacity>
@@ -348,7 +382,7 @@ const Settings = () => {
           >
             <View style={styles.menuItemLeft}>
               <Shield size={20} color="#94A3B8" />
-              <Text style={styles.menuItemText}>보안 및 인증</Text>
+              <Text style={styles.menuItemText}>{t('settings.security_and_auth')}</Text>
             </View>
             <ChevronRight size={20} color="#64748B" />
           </TouchableOpacity>
@@ -359,7 +393,7 @@ const Settings = () => {
           >
             <View style={styles.menuItemLeft}>
               <FileText size={20} color="#94A3B8" />
-              <Text style={styles.menuItemText}>프라이버시 정책</Text>
+              <Text style={styles.menuItemText}>{t('settings.privacy_policy')}</Text>
             </View>
             <ChevronRight size={20} color="#64748B" />
           </TouchableOpacity>
@@ -370,14 +404,14 @@ const Settings = () => {
           >
             <View style={styles.menuItemLeft}>
               <Trash2 size={20} color="#EF4444" />
-              <Text style={[styles.menuItemText, { color: '#EF4444' }]}>계정 탈퇴</Text>
+              <Text style={[styles.menuItemText, { color: '#EF4444' }]}>{t('settings.account_delete')}</Text>
             </View>
             <ChevronRight size={20} color="#64748B" />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>로그아웃</Text>
+          <Text style={styles.logoutText}>{t('settings.logout')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -391,13 +425,13 @@ const Settings = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>크레딧 충전</Text>
+              <Text style={styles.modalTitle}>{t('settings.charge_modal_title')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <X size={24} color="#F8FAFC" />
               </TouchableOpacity>
             </View>
             
-            <Text style={styles.modalSubtitle}>원하시는 상품을 선택해 주세요.</Text>
+            <Text style={styles.modalSubtitle}>{t('settings.charge_modal_subtitle')}</Text>
             
             {chargeOptions.map((item) => (
               <TouchableOpacity 
@@ -407,7 +441,7 @@ const Settings = () => {
               >
                 <View>
                   <Text style={styles.chargeCredits}>{item.credits} Credits</Text>
-                  {item.popular && <View style={styles.popularBadge}><Text style={styles.popularText}>POPULAR</Text></View>}
+                  {item.popular && <View style={styles.popularBadge}><Text style={styles.popularText}>{t('settings.popular')}</Text></View>}
                 </View>
                 <Text style={styles.chargePrice}>{item.price}</Text>
               </TouchableOpacity>
@@ -426,16 +460,16 @@ const Settings = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>프로필 설정</Text>
+              <Text style={styles.modalTitle}>{t('settings.profile_settings')}</Text>
               <TouchableOpacity onPress={() => setProfileModalVisible(false)}>
                 <X size={24} color="#F8FAFC" />
               </TouchableOpacity>
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>닉네임</Text>
+              <Text style={styles.inputLabel}>{t('settings.nickname')}</Text>
               <TextInput 
                 style={styles.textInput}
-                placeholder="닉네임을 입력하세요"
+                placeholder={t('settings.nickname_placeholder')}
                 placeholderTextColor="#64748B"
                 value={nickname}
                 onChangeText={setNickname}
@@ -445,7 +479,7 @@ const Settings = () => {
               style={styles.saveButton}
               onPress={handleUpdateProfile}
             >
-              <Text style={styles.saveButtonText}>저장하기</Text>
+              <Text style={styles.saveButtonText}>{t('settings.save_profile')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -461,15 +495,15 @@ const Settings = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>알림 설정</Text>
+              <Text style={styles.modalTitle}>{t('settings.notification_settings')}</Text>
               <TouchableOpacity onPress={() => setNotiModalVisible(false)}>
                 <X size={24} color="#F8FAFC" />
               </TouchableOpacity>
             </View>
             <View style={styles.toggleItem}>
               <View style={styles.toggleInfo}>
-                <Text style={styles.toggleTitle}>매일 학습 알림</Text>
-                <Text style={styles.toggleDesc}>매일 정해진 시간에 학습 알림을 받습니다.</Text>
+                <Text style={styles.toggleTitle}>{t('settings.daily_notification')}</Text>
+                <Text style={styles.toggleDesc}>{t('settings.daily_noti_desc')}</Text>
               </View>
               <Switch 
                 value={notiStudy}
@@ -479,8 +513,8 @@ const Settings = () => {
             </View>
             <View style={styles.toggleItem}>
               <View style={styles.toggleInfo}>
-                <Text style={styles.toggleTitle}>보상 및 혜택 알림</Text>
-                <Text style={styles.toggleDesc}>무료 크레딧 및 이벤트 소식을 받습니다.</Text>
+                <Text style={styles.toggleTitle}>{t('settings.reward_notification')}</Text>
+                <Text style={styles.toggleDesc}>{t('settings.reward_noti_desc')}</Text>
               </View>
               <Switch 
                 value={notiReward}
@@ -502,15 +536,15 @@ const Settings = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>보안 및 인증</Text>
+              <Text style={styles.modalTitle}>{t('settings.security_and_auth')}</Text>
               <TouchableOpacity onPress={() => setSecurityModalVisible(false)}>
                 <X size={24} color="#F8FAFC" />
               </TouchableOpacity>
             </View>
             <View style={styles.infoBox}>
               <Shield size={32} color="#3B82F6" style={{ marginBottom: 12 }} />
-              <Text style={styles.infoTitle}>보안 설정 활성화됨</Text>
-              <Text style={styles.infoDesc}>현재 구글 소셜 계정을 통해 안전하게 로그인되어 있습니다. 추가 인증 수단 설정은 준비 중입니다.</Text>
+              <Text style={styles.infoTitle}>{t('settings.security_active')}</Text>
+              <Text style={styles.infoDesc}>{t('settings.security_desc')}</Text>
             </View>
           </View>
         </View>

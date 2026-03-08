@@ -18,10 +18,12 @@ import { LogIn, Mail, Lock } from 'lucide-react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import { useTranslation } from 'react-i18next';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const Login = ({ navigation }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -58,11 +60,11 @@ const Login = ({ navigation }) => {
         // 세션 정보가 있으면 AppNavigator에서 감지하겠지만, 강제로 트리거되도록 
         // 만약 세션이 있음에도 화면 전환이 안된다면 AppNavigator 이슈일 수 있음
       } else {
-        throw new Error('Google ID Token이 없습니다. 클라이언트 설정을 확인해주세요.');
+        throw new Error(t('login.no_google_token'));
       }
     } catch (error) {
       if (error.code !== statusCodes.SIGN_IN_CANCELLED) {
-        Alert.alert('로그인 오류', error.message);
+        Alert.alert(t('login.error_title'), error.message);
       }
     } finally {
       setGoogleLoading(false);
@@ -113,22 +115,22 @@ const Login = ({ navigation }) => {
         }
       }
     } catch (error) {
-      Alert.alert('카카오 로그인 오류', error.message);
+      Alert.alert(t('login.kakao_error'), error.message);
     }
   }
 
   async function signInWithEmail() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) Alert.alert('로그인 실패', error.message);
+    if (error) Alert.alert(t('login.fail_title'), error.message);
     setLoading(false);
   }
 
   async function signUpWithEmail() {
     setLoading(true);
     const { data: { session }, error } = await supabase.auth.signUp({ email, password });
-    if (error) Alert.alert('회원가입 실패', error.message);
-    if (!session && !error) Alert.alert('확인 필요', '이메일 확인 메일을 전송했습니다.');
+    if (error) Alert.alert(t('login.signup_fail_title'), error.message);
+    if (!session && !error) Alert.alert(t('common.confirm'), t('login.verify_email_sent'));
     setLoading(false);
   }
 
@@ -136,36 +138,38 @@ const Login = ({ navigation }) => {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       <View style={styles.inner}>
         <View style={styles.header}>
-          <View style={styles.logoCircle}>
-            <LogIn size={40} color={COLORS.primary} />
-          </View>
+          <Image 
+            source={require('../../../assets/logo.png')} 
+            style={styles.logoImage} 
+            resizeMode="contain"
+          />
           <Text style={styles.title}>TOEFL <Text style={{ color: COLORS.primary }}>Byte</Text></Text>
-          <Text style={styles.subtitle}>AI가 설계하는 가장 완벽한 1분 리딩</Text>
+          <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <Mail size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-            <TextInput style={styles.input} placeholder="이메일 주소" placeholderTextColor={COLORS.textSecondary} value={email} onChangeText={setEmail} autoCapitalize="none" />
+            <TextInput style={styles.input} placeholder={t('login.email_placeholder')} placeholderTextColor={COLORS.textSecondary} value={email} onChangeText={setEmail} autoCapitalize="none" />
           </View>
           <View style={styles.inputContainer}>
             <Lock size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-            <TextInput style={styles.input} placeholder="비밀번호" placeholderTextColor={COLORS.textSecondary} value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
+            <TextInput style={styles.input} placeholder={t('login.password_placeholder')} placeholderTextColor={COLORS.textSecondary} value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
           </View>
 
           <TouchableOpacity style={styles.mainButton} onPress={isSignUp ? signUpWithEmail : signInWithEmail} disabled={loading}>
-            {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.mainButtonText}>{isSignUp ? '회원가입 시작' : '로그인'}</Text>}
+            {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.mainButtonText}>{isSignUp ? t('login.start_signup') : t('login.title')}</Text>}
           </TouchableOpacity>
 
           <View style={styles.dividerContainer}>
-            <View style={styles.divider} /><Text style={styles.dividerText}>또는</Text><View style={styles.divider} />
+            <View style={styles.divider} /><Text style={styles.dividerText}>{t('login.or')}</Text><View style={styles.divider} />
           </View>
 
           <TouchableOpacity style={styles.googleButton} onPress={signInWithGoogle} disabled={googleLoading}>
             {googleLoading ? <ActivityIndicator color={COLORS.text} /> : (
               <>
                 <Image source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_\"G\"_logo.svg/1024px-Google_\"G\"_logo.svg.png' }} style={styles.googleIcon} />
-                <Text style={styles.googleButtonText}>Google로 계속하기</Text>
+                <Text style={styles.googleButtonText}>{t('login.google_continue')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -175,7 +179,7 @@ const Login = ({ navigation }) => {
               <View style={styles.kakaoSymbol}>
                 <Text style={styles.kakaoSymbolText}>K</Text>
               </View>
-              <Text style={styles.kakaoButtonText}>카카오톡으로 로그인</Text>
+              <Text style={styles.kakaoButtonText}>{t('login.kakao_continue')}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -183,8 +187,8 @@ const Login = ({ navigation }) => {
         <View style={styles.footer}>
           <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)}>
             <Text style={styles.footerText}>
-              {isSignUp ? '이미 계정이 있으신가요? ' : '아직 회원이 아니신가요? '}
-              <Text style={styles.footerLink}>{isSignUp ? '로그인' : '회원가입'}</Text>
+              {isSignUp ? t('login.already_have_account') : t('login.not_member_yet')}
+              <Text style={styles.footerLink}>{isSignUp ? t('login.title') : t('login.start_signup')}</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -197,7 +201,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   inner: { flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center' },
   header: { alignItems: 'center', marginBottom: 40 },
-  logoCircle: { width: 80, height: 80, borderRadius: 24, backgroundColor: 'rgba(41, 121, 255, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(41, 121, 255, 0.2)' },
+  logoImage: { width: 100, height: 100, marginBottom: 16 },
   title: { fontSize: 32, fontWeight: '900', color: COLORS.text, letterSpacing: -0.5 },
   subtitle: { fontSize: 15, color: COLORS.textSecondary, marginTop: 8 },
   form: { width: '100%', maxWidth: 400 },

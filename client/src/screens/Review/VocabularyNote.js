@@ -19,10 +19,12 @@ import {
   Search,
   Plus
 } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import useVocab from '../../hooks/useVocab';
 
 const VocabularyNote = ({ navigation }) => {
   const { getVocabList, deleteWord } = useVocab();
+  const { t } = useTranslation();
   const [vocabList, setVocabList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quizModalVisible, setQuizModalVisible] = useState(false);
@@ -45,19 +47,19 @@ const VocabularyNote = ({ navigation }) => {
 
   const handleDelete = (id, word) => {
     Alert.alert(
-      '단어 삭제',
-      `'${word}' 단어를 노트에서 삭제하시겠습니까?`,
+      t('vocabulary.delete_title'),
+      t('vocabulary.delete_confirm', { word }),
       [
-        { text: '취소', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { 
-          text: '삭제', 
+          text: t('common.delete'), 
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteWord(id);
               setVocabList(prev => prev.filter(item => item.id !== id));
             } catch (error) {
-              Alert.alert('오류', '삭제에 실패했습니다.');
+              Alert.alert(t('common.error'), t('common.error_occurred') || 'Error occurred');
             }
           }
         }
@@ -79,7 +81,7 @@ const VocabularyNote = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft color={COLORS.text} size={28} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>기출 단어장</Text>
+        <Text style={styles.headerTitle}>{t('vocabulary.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -93,15 +95,15 @@ const VocabularyNote = ({ navigation }) => {
             <View style={styles.quizBannerInfo}>
               <Play fill={COLORS.white} color={COLORS.white} size={20} />
               <View style={{ marginLeft: 12 }}>
-                <Text style={styles.quizTitle}>단어 퀴즈 챌린지</Text>
-                <Text style={styles.quizDesc}>나만의 단어 {vocabList.length}개로 실력을 확인하세요.</Text>
+                <Text style={styles.quizTitle}>{t('vocabulary.quiz_challenge')}</Text>
+                <Text style={styles.quizDesc}>{t('vocabulary.quiz_desc', { count: vocabList.length })}</Text>
               </View>
             </View>
           </TouchableOpacity>
         ) : (
           <View style={styles.emptyBanner}>
             <Search size={24} color={COLORS.textSecondary} />
-            <Text style={styles.emptyBannerText}>단어를 3개 이상 저장하면 퀴즈가 활성화됩니다.</Text>
+            <Text style={styles.emptyBannerText}>{t('vocabulary.quiz_unlock_desc')}</Text>
           </View>
         )}
 
@@ -129,8 +131,8 @@ const VocabularyNote = ({ navigation }) => {
         ) : (
           <View style={styles.emptyState}>
             <BookMarked size={64} color={COLORS.surface} />
-            <Text style={styles.emptyText}>저장된 단어가 없습니다.</Text>
-            <Text style={styles.emptySubtext}>학습 중 핵심 단어를 꾹 눌러 저장해 보세요!</Text>
+            <Text style={styles.emptyText}>{t('vocabulary.no_vocab')}</Text>
+            <Text style={styles.emptySubtext}>{t('vocabulary.empty_subtext')}</Text>
           </View>
         )}
       </ScrollView>
@@ -143,16 +145,15 @@ const VocabularyNote = ({ navigation }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>단어 퀴즈 (Beta)</Text>
+            <Text style={styles.modalTitle}>{t('vocabulary.quiz_beta_title')}</Text>
             <Text style={styles.modalText}>
-              저장된 단어를 기반으로 AI가 퀴즈를 생성 중입니다. 
-              곧 업데이트될 예정입니다!
+              {t('vocabulary.quiz_beta_desc')}
             </Text>
             <TouchableOpacity 
               style={styles.closeButton}
               onPress={() => setQuizModalVisible(false)}
             >
-              <Text style={styles.closeButtonText}>확인</Text>
+              <Text style={styles.closeButtonText}>{t('common.confirm')}</Text>
             </TouchableOpacity>
           </View>
         </View>

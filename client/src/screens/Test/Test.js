@@ -10,16 +10,20 @@ import {
   Animated,
   Modal
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING } from '../../constants/theme';
+import { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
 import useBite from '../../hooks/useBite';
 import useVocab from '../../hooks/useVocab';
 import useStore from '../../store/useStore';
 import { X, Trophy, MessageCircle, Timer as TimerIcon, Eye, EyeOff, Bookmark, Zap, CheckCircle } from 'lucide-react-native';
 import axios from 'axios';
 import { API_URL } from '../../api/config';
+import AnimatedButton from '../../components/AnimatedButton';
 
 const Test = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const { generateBite, saveResult } = useBite();
   const { saveWord } = useVocab();
   const { currentBite, deductCredits, reused, addToHistory, setCurrentBite, timerEnabled, userId } = useStore();
@@ -40,6 +44,48 @@ const Test = ({ navigation, route }) => {
 
   const reviewMode = route.params?.reviewMode;
   const reviewBite = route.params?.bite;
+
+  // AdMob Setup
+  const adRef = useRef(null);
+  const [adLoaded, setAdLoaded] = useState(false);
+
+  useEffect(() => {
+    const adUnitId = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID || TestIds.INTERSTITIAL;
+    const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
+      requestNonPersonalizedAdsOnly: true,
+    });
+
+    const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+      setAdLoaded(true);
+    });
+
+    const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+      setAdLoaded(false);
+      navigation.navigate('Home');
+    });
+
+    const unsubscribeError = interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
+      console.warn('AdMob Interstitial Error:', error);
+      setAdLoaded(false);
+    });
+
+    interstitial.load();
+    adRef.current = interstitial;
+
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeClosed();
+      unsubscribeError();
+    };
+  }, []);
+
+  const handleFinish = () => {
+    if (adLoaded) {
+      adRef.current.show();
+    } else {
+      navigation.navigate('Home');
+    }
+  };
 
   // 1. Timer Logic
   useEffect(() => {
@@ -134,7 +180,7 @@ const Test = ({ navigation, route }) => {
         deductCredits(5);
       }
     } catch (error) {
-      Alert.alert('오류', '문제를 생성하지 못했습니다. 크레딧을 확인해 주세요.');
+      Alert.alert(t('common.error'), t('test.generate_error'));
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -173,11 +219,11 @@ const Test = ({ navigation, route }) => {
       });
 
       if (timedOut) {
-        Alert.alert('시간 초과!', '90초가 지났습니다. 오답 처리되었습니다. 일타강사의 피드백을 확인하세요.');
+        Alert.alert(t('test.timeout_title'), t('test.timeout_msg'));
       }
     } catch (error) {
       console.error('Save Result Error (Client-side):', error);
-      Alert.alert('저장 실패', '결과를 서버에 저장하지 못했습니다. (동일 문제가 반복될 수 있습니다)');
+      Alert.alert(t('test.save_fail'), t('test.save_fail_msg'));
     }
   };
 
@@ -217,9 +263,9 @@ const Test = ({ navigation, route }) => {
       Alert.alert('저장 완료', `'${selectedWord}' 단어가 내 단어장에 저장되었습니다.`, [{ text: '확인' }]);
     } catch (error) {
       if (error.response?.status === 400) {
-        Alert.alert('알림', '이미 저장된 단어입니다.');
+        Alert.alert(t('common.confirm'), t('chat.already_saved'));
       } else {
-        Alert.alert('오류', '저장 중 문제가 발생했습니다.');
+        Alert.alert(t('common.error'), t('chat.save_error'));
       }
     }
   };
@@ -230,8 +276,8 @@ const Test = ({ navigation, route }) => {
         <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>
           {reused 
-            ? "검증된 기출 포인트를 가져오는 중..." 
-            : "일타강사가 최신 기출 패턴을 분석하여\n문제를 출제 중입니다..."
+            ? t('test.loading_reused')
+            : t('test.loading_new')
           }
         </Text>
       </View>
@@ -255,9 +301,9 @@ const Test = ({ navigation, route }) => {
         )}
 
         {focusMode ? (
-          <Text style={styles.focusLabel}>Focus Mode Active</Text>
+          <Text style={styles.focusLabel}>{t('test.focus_mode')}</Text>
         ) : (
-          <Text style={styles.headerTitle}>오늘의 바이트</Text>
+          <Text style={styles.headerTitle}>{t('test.title')}</Text>
         )}
 
         <TouchableOpacity onPress={() => setFocusMode(!focusMode)} style={styles.headerIcon}>
@@ -273,7 +319,7 @@ const Test = ({ navigation, route }) => {
         <View style={[styles.passageContainer, focusMode && styles.passageFocus]}>
           {reused && !focusMode && (
             <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>🔥 1,240명의 수험생이 함께 푼 인기 문항</Text>
+              <Text style={styles.badgeText}>{t('test.reused_badge', { count: '1,240' })}</Text>
             </View>
           )}
           
@@ -359,7 +405,7 @@ const Test = ({ navigation, route }) => {
                   style={styles.closeDrawerButton}
                   onPress={() => setSelectedWord(null)}
                 >
-                  <Text style={styles.closeDrawerText}>배우기 완료</Text>
+                  <Text style={styles.closeDrawerText}>{t('review_detail.learn_done')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             )}
@@ -369,29 +415,29 @@ const Test = ({ navigation, route }) => {
 
       {selectedAnswer && (
         <View style={styles.footer}>
-          <TouchableOpacity 
+          <AnimatedButton 
             style={styles.chatButton}
             onPress={() => navigation.navigate('Chat', { 
               context: { ...currentBite, isTimeout: selectedAnswer === 'TIMEOUT' } 
             })}
           >
             <MessageCircle color={COLORS.white} size={20} />
-            <Text style={styles.chatButtonText}>일타강사 해설 듣기 (-1C)</Text>
-          </TouchableOpacity>
+            <Text style={styles.chatButtonText}>{t('test.ask_tutor_btn')}</Text>
+          </AnimatedButton>
           
-          <TouchableOpacity 
+          <AnimatedButton 
             style={styles.nextButton}
             onPress={() => loadNewBite()}
           >
             <Zap color={COLORS.primary} size={20} />
-            <Text style={styles.nextButtonText}>해설 생략하고 다음 문제</Text>
-          </TouchableOpacity>
+            <Text style={styles.nextButtonText}>{t('test.next_problem_btn')}</Text>
+          </AnimatedButton>
           
           <TouchableOpacity 
             style={styles.finishButton}
-            onPress={() => navigation.navigate('Home')}
+            onPress={handleFinish}
           >
-            <Text style={styles.finishButtonText}>그만 풀기</Text>
+            <Text style={styles.finishButtonText}>{t('test.stop_learning_btn')}</Text>
           </TouchableOpacity>
         </View>
       )}

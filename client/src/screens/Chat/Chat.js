@@ -16,9 +16,11 @@ import { Send, ChevronDown, Plus } from 'lucide-react-native';
 import useBite from '../../hooks/useBite';
 import useVocab from '../../hooks/useVocab';
 import useStore from '../../store/useStore';
+import { useTranslation } from 'react-i18next';
 
 const Chat = ({ route, navigation }) => {
   const { context } = route.params;
+  const { t } = useTranslation();
   const { getTutorChat } = useBite();
   const { saveWord } = useVocab();
   const { deductCredits } = useStore();
@@ -36,7 +38,7 @@ const Chat = ({ route, navigation }) => {
   const handleInitialExplanation = async () => {
     setIsTyping(true);
     try {
-      const response = await getTutorChat("이 문제에 대한 심층 해설을 부탁해!", context);
+      const response = await getTutorChat(t('chat.initial_query'), context);
       setMessages([{ role: 'assistant', content: response.reply }]);
       deductCredits(1);
     } catch (error) {
@@ -49,12 +51,12 @@ const Chat = ({ route, navigation }) => {
   const handleSaveWord = async (word, meaning) => {
     try {
       await saveWord(word, meaning, context.passage);
-      Alert.alert('저장 완료', `'${word}' 단어가 내 단어장에 저장되었습니다.`);
+      Alert.alert(t('chat.save_success'), t('chat.save_msg', { word }));
     } catch (error) {
       if (error.response?.status === 400) {
-        Alert.alert('알림', '이미 저장된 단어입니다.');
+        Alert.alert(t('common.confirm'), t('chat.already_saved'));
       } else {
-        Alert.alert('오류', '단어 저장 중 문제가 발생했습니다.');
+        Alert.alert(t('common.error'), t('chat.save_error'));
       }
     }
   };
@@ -94,15 +96,15 @@ const Chat = ({ route, navigation }) => {
         <View style={styles.tutorInfo}>
           <View style={styles.avatar} />
           <View>
-            <Text style={styles.tutorName}>Star Tutor <Text style={styles.badge}>PREMIUM</Text></Text>
-            <Text style={styles.tutorStatus}>실시간 해설 중...</Text>
+            <Text style={styles.tutorName}>{t('chat.title')} <Text style={styles.badge}>{t('chat.premium')}</Text></Text>
+            <Text style={styles.tutorStatus}>{t('chat.status')}</Text>
           </View>
         </View>
       </View>
 
       {/* Recommended Keywords for Saving */}
       <View style={styles.keywordSection}>
-        <Text style={styles.keywordTitle}>핵심 키워드 저장</Text>
+        <Text style={styles.keywordTitle}>{t('chat.keyword_title')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.keywordScroll}>
           {context.keyWords?.map((kw, i) => (
             <TouchableOpacity 
@@ -114,7 +116,7 @@ const Chat = ({ route, navigation }) => {
               <Text style={styles.keywordText}>{kw.word}</Text>
             </TouchableOpacity>
           )) || (
-            <Text style={styles.noKeywordText}>해설 내용을 읽으며 중요한 단어를 확인하세요.</Text>
+            <Text style={styles.noKeywordText}>{t('chat.no_keywords')}</Text>
           )}
         </ScrollView>
       </View>
@@ -161,7 +163,7 @@ const Chat = ({ route, navigation }) => {
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder="질문을 입력해 주세요..."
+            placeholder={t('chat.input_placeholder')}
             placeholderTextColor={COLORS.textSecondary}
             autoCapitalize="sentences"
             autoCorrect={true}

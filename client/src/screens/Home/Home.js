@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING } from '../../constants/theme';
 import useStore from '../../store/useStore';
@@ -11,8 +11,41 @@ import {
   Clock 
 } from 'lucide-react-native';
 
+import AnimatedButton from '../../components/AnimatedButton';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { useTranslation } from 'react-i18next';
+
 const Home = ({ navigation }) => {
-  const { credits } = useStore();
+  const { t } = useTranslation();
+  const { credits, history } = useStore();
+
+  // Helper function to calculate stats from history
+  const calculateStats = () => {
+    if (!history || history.length === 0) {
+      return { accuracy: 0, wpm: 0, streak: 0 };
+    }
+
+    const totalAccuracy = history.reduce((acc, curr) => acc + (curr.accuracy || 0), 0);
+    const avgAccuracy = Math.round(totalAccuracy / history.length);
+    
+    // For WPM, we can take the average of recent tests
+    const totalWpm = history.reduce((acc, curr) => acc + (curr.wpm || 0), 0);
+    const avgWpm = Math.round(totalWpm / history.length);
+
+    // Simplistic streak calculation: count unique days in history
+    const uniqueDays = new Set(history.map(item => {
+      const date = new Date(item.timestamp);
+      return date.toDateString();
+    })).size;
+
+    return { 
+      accuracy: avgAccuracy, 
+      wpm: avgWpm, 
+      streak: uniqueDays 
+    };
+  };
+
+  const stats = calculateStats();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -20,13 +53,20 @@ const Home = ({ navigation }) => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header with Streak */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.welcomeText}>안녕하세요, 수험생님!</Text>
-            <Text style={styles.subWelcome}>오늘도 리딩 바이트 할 시간입니다 ⚡️</Text>
+          <View style={styles.headerLeft}>
+            <Image 
+              source={require('../../../assets/logo.png')} 
+              style={styles.logoMini} 
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.welcomeText}>{t('welcome')}</Text>
+              <Text style={styles.subWelcome}>{t('subWelcome')}</Text>
+            </View>
           </View>
           <View style={styles.streakBadge}>
             <Zap fill="#FFD700" color="#FFD700" size={16} />
-            <Text style={styles.streakText}>15 DAY</Text>
+            <Text style={styles.streakText}>{stats.streak} DAY</Text>
           </View>
         </View>
 
@@ -34,48 +74,47 @@ const Home = ({ navigation }) => {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Target color={COLORS.primary} size={24} />
-            <Text style={styles.statLabel}>정확도</Text>
-            <Text style={styles.statValue}>84%</Text>
+            <Text style={styles.statLabel}>{t('accuracy')}</Text>
+            <Text style={styles.statValue}>{stats.accuracy}%</Text>
           </View>
           <View style={styles.statCard}>
             <TrendingUp color={COLORS.success} size={24} />
-            <Text style={styles.statLabel}>읽기 속도</Text>
-            <Text style={styles.statValue}>180 <Text style={{fontSize: 12}}>WPM</Text></Text>
+            <Text style={styles.statLabel}>{t('reading_speed')}</Text>
+            <Text style={styles.statValue}>{stats.wpm} <Text style={{fontSize: 12}}>WPM</Text></Text>
           </View>
           <View style={styles.statCard}>
             <Zap color={COLORS.error} size={24} />
-            <Text style={styles.statLabel}>크레딧</Text>
+            <Text style={styles.statLabel}>{t('credits')}</Text>
             <Text style={styles.statValue}>{credits}</Text>
           </View>
         </View>
 
         {/* Main Action Button */}
-        <TouchableOpacity 
+        <AnimatedButton 
           style={styles.mainActionButton}
           onPress={() => navigation.navigate('Test')}
-          activeOpacity={0.9}
         >
           <View style={styles.actionIconContainer}>
             <BookOpen color={COLORS.white} size={32} />
           </View>
           <View style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>오늘의 리딩 시작하기</Text>
-            <Text style={styles.actionSubtitle}>실전 기출 문제로 훈련하세요</Text>
+            <Text style={styles.actionTitle}>{t('start_reading')}</Text>
+            <Text style={styles.actionSubtitle}>{t('start_subtitle')}</Text>
           </View>
           <ChevronRight color="rgba(255,255,255,0.5)" size={24} />
-        </TouchableOpacity>
+        </AnimatedButton>
 
         {/* Short Byte Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>출퇴근 1분 컷 (Short Byte) 🚌</Text>
+          <Text style={styles.sectionTitle}>{t('short_byte')}</Text>
           <TouchableOpacity>
-            <Text style={styles.seeAll}>전체보기</Text>
+            <Text style={styles.seeAll}>{t('see_all')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.shortByteList}>
           {[1, 2].map((item) => (
-            <TouchableOpacity 
+            <AnimatedButton 
               key={item} 
               style={styles.shortByteCard}
               onPress={() => navigation.navigate('Test', { 
@@ -92,12 +131,23 @@ const Home = ({ navigation }) => {
               <View style={styles.goBadge}>
                 <Text style={styles.goText}>GO</Text>
               </View>
-            </TouchableOpacity>
+            </AnimatedButton>
           ))}
         </View>
 
-        <View style={{height: 40}} />
+        <View style={{height: 20}} />
       </ScrollView>
+
+      {/* Banner Ad at bottom */}
+      <View style={{ alignItems: 'center', backgroundColor: COLORS.background, paddingBottom: 10 }}>
+        <BannerAd
+          unitId={process.env.EXPO_PUBLIC_ADMOB_BANNER_ID || TestIds.BANNER}
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true,
+          }}
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -113,9 +163,18 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: SPACING.lg,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoMini: {
+    width: 44,
+    height: 44,
+    marginRight: 12,
   },
   welcomeText: {
     color: COLORS.text,

@@ -30,25 +30,10 @@ class LLMService {
    * Focuses on Gemini-Flash for speed and cost-effectiveness
    */
   async generateContent(systemPrompt, userPrompt) {
-    if (this.genAI) {
-      try {
-        console.log("Generating with Gemini (Primary for speed)...");
-        const result = await this.geminiModel.generateContent([
-          { text: systemPrompt },
-          { text: userPrompt }
-        ]);
-        const response = await result.response;
-        let text = response.text();
-        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        return JSON.parse(text);
-      } catch (error) {
-        console.error("Gemini API Error, falling back to DeepSeek:", error.message);
-      }
-    }
-
+    // Priority to DeepSeek for bulk generation to avoid Gemini quota limits
     if (this.openai) {
       try {
-        console.log("Generating with DeepSeek (Fallback)...");
+        console.log("Generating with DeepSeek (High load mode)...");
         const response = await this.openai.chat.completions.create({
           model: "deepseek-chat",
           messages: [
@@ -59,7 +44,23 @@ class LLMService {
         });
         return JSON.parse(response.choices[0].message.content);
       } catch (error) {
-        console.error("DeepSeek API Error (Fallback):", error.message);
+        console.error("DeepSeek API Error:", error.message);
+      }
+    }
+
+    if (this.genAI) {
+      try {
+        console.log("Generating with Gemini (Fallback)...");
+        const result = await this.geminiModel.generateContent([
+          { text: systemPrompt },
+          { text: userPrompt }
+        ]);
+        const response = await result.response;
+        let text = response.text();
+        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        return JSON.parse(text);
+      } catch (error) {
+        console.error("Gemini API Error (Fallback):", error.message);
         throw error;
       }
     }
