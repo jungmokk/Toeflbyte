@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "TOEFL Byte",
+    "slug": "toefl-byte",
+    "scheme": "com.toeflbyte.app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0E21"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0E21",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "package": "com.toeflbyte.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
+  }
+}

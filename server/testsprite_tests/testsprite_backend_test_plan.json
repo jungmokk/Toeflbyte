@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "post api generate bite with valid topic",
+    "description": "Test the /api/generate-bite endpoint with a valid topic parameter to ensure it returns a generated passage, question, options, and a 90-second timer starts."
+  },
+  {
+    "id": "TC002",
+    "title": "post api generate bite with reused question",
+    "description": "Test the /api/generate-bite endpoint when the API responds with reused=true to verify the reused question badge is shown and the timer behaves correctly including automatic submission on timeout."
+  },
+  {
+    "id": "TC003",
+    "title": "post api generate bite with server error",
+    "description": "Test the /api/generate-bite endpoint handling of 5xx or network errors to ensure an error toast is shown with a retry button and retrying triggers the API call again."
+  },
+  {
+    "id": "TC004",
+    "title": "post api chat tutor with valid message and context",
+    "description": "Test the /api/chat-tutor endpoint by sending a valid message and question context to receive an AI explanation with cited passage signals and pacing advice."
+  },
+  {
+    "id": "TC005",
+    "title": "post api chat tutor with empty message",
+    "description": "Test client-side validation for /api/chat-tutor to ensure sending an empty message shows an inline error and prevents the API call."
+  },
+  {
+    "id": "TC006",
+    "title": "post api chat tutor with insufficient credits",
+    "description": "Test the client behavior when attempting to use /api/chat-tutor with less than 1 credit to verify the '충전 필요' modal appears and the tutor bottom sheet closes on cancel."
+  },
+  {
+    "id": "TC007",
+    "title": "post api save result with valid data",
+    "description": "Test the /api/save-result endpoint by submitting valid user answer data and verify the server stores the BiteResult entry correctly."
+  },
+  {
+    "id": "TC008",
+    "title": "post api save result with network failure",
+    "description": "Test the /api/save-result endpoint handling of network failure to ensure an inline error is shown with a retry button and retrying succeeds."
+  },
+  {
+    "id": "TC009",
+    "title": "post api get summary with recent mistakes",
+    "description": "Test the /api/get-summary endpoint with a userId that has recent mistakes to verify the AI analysis summarizes wrong answers and weak topics and provides retry options."
+  },
+  {
+    "id": "TC010",
+    "title": "post api get summary with no recent mistakes",
+    "description": "Test the /api/get-summary endpoint with a userId that has no recent mistakes to verify the message '최근 틀린 문제가 없습니다. 더 많은 문제를 풀어보세요' and the CTA to return to Daily Bite is shown."
+  }
+]

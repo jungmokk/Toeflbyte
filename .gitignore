@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Local configuration
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+*.env
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Sub-projects
+server/node_modules/
+client/node_modules/
+client/.expo/
+client/android/
+client/ios/
+client/dist/
+
+# Build artifacts
+build/
+dist/

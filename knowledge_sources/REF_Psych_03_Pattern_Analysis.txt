@@ -1,0 +1,67 @@
+=== [KNOWLEDGE SOURCE: Psychology] ===
+Source: https://www.examenglish.com/TOEFL/XML/toefl_reading3.xml
+Title: Monkey_Economy
+
+--- [PART 1: BITE-SIZED PASSAGE ANALYSIS] ---
+
+[SECTION 1]
+LOGIC: Analysis suggests focus on Narrative
+TEXT: Risk-Taking and the Monkey Economy   Humans are uniquely smart among all the other species on the planet.  We are capable of outstanding feats of technology and engineering.  Then why are we so prone to making mistakes?  And why do we tend to make the same ones time and time again?  When Primate Psy...
+
+[SECTION 2]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: In order to test these theories, the team selected a group of Brown Capuchin monkeys.  Monkeys were selected for the test because, as distant relatives of humans, they are intelligent and have the capacity to learn.  However, they are not influenced by any of the technological or cultural environmen...
+
+[SECTION 3]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: [A]    Of particular interest to the scientists was whether monkeys would make the same mistakes when making financial decisions.  [B]    In order to find out, they had to introduce the monkeys to money.  [C]    The monkeys soon  cottoned on , and as well as learning simple exchange techniques, were...
+
+[SECTION 4]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: So, after establishing that the monkey market was operating effectively, the team decided to introduce some problems which humans generally get wrong.  One of these issues is risk-taking.   Imagine that someone gave you $1000.  In addition to this $1000, you can receive either A) an additional $500 ...
+
+[SECTION 5]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: So would the monkeys make the same basic error of judgement?  The team put them to the test by giving them similar options.  In the first test, monkeys had the option of exchanging their disc for one grape and receiving one bonus grape, or exchanging the disc for one grape and sometimes receiving tw...
+
+[SECTION 6]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: The implications of this experiment are that because monkeys make the same irrational judgements that humans do, maybe human error is not a result of the complexity of our financial institutions, but is imbedded in our evolutionary history.  If this is the case, our errors of judgement will be very ...
+
+
+--- [PART 2: QUESTION PATTERN & DISTRACTOR LOGIC] ---
+
+Q: What was the aim of the experiment outlined above?
+ANSWER: B
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Where in paragraph 3 could the sentence below be best placed?    The team distributed metal discs to the monkeys, and taught them that the discs could be exchanged with team-members for food.
+ANSWER: C
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Which of the following statements is the best paraphrase of the highlighted sentence?   On a more optimistic note however, humans are fully capable of overcoming limitations once we have identified them.
+ANSWER: B
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: The words ' cottoned on ' are closest in meaning to:
+ANSWER: A
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Which paragraph addresses why monkeys were chosen for the experiment?
+ANSWER: A
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: What can be inferred about Laurie Santos?
+ANSWER: B
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Which  THREE  of the following statements are supported by the text?
+ANSWER: B, D, E
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.

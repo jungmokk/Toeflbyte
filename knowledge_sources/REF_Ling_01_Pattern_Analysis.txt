@@ -1,0 +1,83 @@
+=== [KNOWLEDGE SOURCE: Linguistics] ===
+Source: https://www.examenglish.com/TOEFL/XML/toefl_reading1.xml
+Title: Creators_of_Grammar
+
+--- [PART 1: BITE-SIZED PASSAGE ANALYSIS] ---
+
+[SECTION 1]
+LOGIC: Analysis suggests focus on Narrative
+TEXT: The Creators of Grammar   No student of a foreign language needs to be told that grammar is complex.  By changing word sequences and by adding a range of auxiliary verbs and suffixes, we are able to communicate tiny variations in meaning.  We can turn a statement into a question, state whether an ac...
+
+[SECTION 2]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: At first, it would appear that this question is impossible to answer.  To find out how grammar is created, someone needs to be present at the time of a language's creation, documenting its emergence.  Many historical linguists are able to trace modern complex languages back to earlier languages, but...
+
+[SECTION 3]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: Some of the most recent languages evolved due to the Atlantic slave trade.  At that time, slaves from a number of different ethnicities were forced to work together under colonizer's rule.  Since they had no opportunity to learn each other's languages, they developed a  make-shift  language called a...
+
+[SECTION 4]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: Further evidence of this can be seen in studying sign languages for the deaf.  Sign languages are not simply a series of gestures; they utilise the same grammatical machinery that is found in spoken languages.  Moreover, there are many different languages used worldwide. The creation of one such lan...
+
+[SECTION 5]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: Some linguists believe that many of the world's most established languages were creoles at first.  The English past tense &#8211;ed ending may have evolved from the verb 'do'.  'It ended'   may   once have been   'It end-did'.  Therefore it would appear that even the most widespread languages were p...
+
+
+--- [PART 2: QUESTION PATTERN & DISTRACTOR LOGIC] ---
+
+Q: In paragraph 1, why does the writer include information about the Cherokee language?
+ANSWER: A
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: What can be inferred about the slaves' pidgin language?
+ANSWER: C
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: All the following sentences about Nicaraguan sign language are true EXCEPT:
+ANSWER: B
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: In paragraph 3, where can the following sentence be placed?   It included standardised word orders and grammatical markers that existed in neither the pidgin language, nor the language of the colonizers.
+ANSWER: D
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: ' From scratch ' in paragraph 2 is closest in meaning to:
+ANSWER: A
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: ' Make-shift ' in paragraph 3 is closest in meaning to:
+ANSWER: B
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Which sentence is closest in meaning to the highlighted sentence?   Grammar is universal and plays a part in every language, no matter how widespread it is.
+ANSWER: A
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: All of the following are features of the new Nicaraguan sign language EXCEPT:
+ANSWER: D
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Which idea is presented in the final paragraph?
+ANSWER: A
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Look at the word ' consistent ' in paragraph 4.  This word could best be replaced by which of the following?
+ANSWER: D
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Which  THREE  ideas best sum up the main ideas of the passage?
+ANSWER: B, E, F
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.

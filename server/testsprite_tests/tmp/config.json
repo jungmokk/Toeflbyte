@@ -1,0 +1,18 @@
+{
+  "status": "commited",
+  "type": "backend",
+  "scope": "codebase",
+  "localEndpoint": "http://127.0.0.1:5001",
+  "executionArgs": {
+    "projectName": "server",
+    "projectPath": "/Users/kazisis/토플일타/server",
+    "testIds": [],
+    "additionalInstruction": "모든 API 요청 시 'x-user-id: ecfa9793-3dcd-4dbb-b666-49acfa7d7ec9' 헤더를 반드시 포함해줘. 최근 수정한 timer 및 persona 로직을 중점적으로 테스트해줘. save-result API에서 timeSpent 필드가 잘 저장되는지도 확인해. localhost:5001 사용.",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-rvFgwbAoC-dxY-jwDESm8XHGo0J7FGTTcdoKwUZqVzrzAt471_HSbG_p_OGnLd2N8L_hk979CgbS8eOOyj5l2k7kalH5HjwhjJBin_ftgANWvYY8mm7OvupgKJMN5Ag2r10"
+    }
+  },
+  "serverPort": 58721,
+  "proxy": "http://a2d43c6b-e0ba-4cfa-a988-74dec56bf3e2:4uLGWqh3KzcuEUvrP1tiPULzokdW671o@tun.testsprite.com:8080"
+}

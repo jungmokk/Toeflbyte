@@ -1,0 +1,37 @@
+[
+  {
+    "topic": "Biology",
+    "type": "FULL",
+    "content_json": "{\"passage\": \"When it comes to physiology, the leatherback turtle is, in some ways, more like a reptilian whale than a turtle. It swims farther into the cold of the northern and southern oceans than any other sea turtle, and it deals with the chilly waters in a way unique among reptiles. ... Maintaining a high body temperature through sheer bulk is called gigantothermy.\", \"question\": \"The word 'bulk' in the passage is closest in meaning to\", \"options\": [\"strength\", \"effort\", \"activity\", \"mass\"], \"answer\": \"D\", \"explanation\": \"문맥상 'bulk'는 거북이의 엄청난 몸집이나 질량을 의미하므로 'mass'가 가장 적절한 동의어입니다.\"}"
+  },
+  {
+    "topic": "History",
+    "type": "FULL",
+    "content_json": "{\"passage\": \"Livestock also came from outside Africa. Cattle were introduced from Asia, as probably were domestic sheep and goats. ... Finally, the camel was introduced around the first century A.D. This was an important innovation, because the camel’s abilities to thrive in harsh desert conditions and to carry large loads cheaply made it an effective and efficient means of transportation.\", \"question\": \"According to the passage, camels were important because they\", \"options\": [\"were the first domesticated animal to be introduced to Africa\", \"allowed the people of the West African savannahs to carve out large empires\", \"helped African peoples defend themselves against Egyptian invaders\", \"made it cheaper and easier to cross the Sahara\"], \"answer\": \"D\", \"explanation\": \"지문에서 낙타는 가혹한 사막 환경에서도 잘 견디며 많은 짐을 저렴하게 운송할 수 있게 해주어 무역과 통신의 통로가 되었다고 설명하고 있습니다.\"}"
+  },
+  {
+    "topic": "Arts",
+    "type": "FULL",
+    "content_json": "{\"passage\": \"The majority of three-dimensional representations, whether standing, seated, or kneeling, exhibit what is called frontality: they face straight ahead, neither twisting nor turning. ... Statues were created not for their decorative effect but to play a primary role in the cults of the gods, the king, and the dead.\", \"question\": \"According to paragraph 2, why are Egyptian statues portrayed frontality?\", \"options\": [\"To create a psychological effect of distance and isolation\", \"To allow them to fulfill their important role in ceremonies of Egyptian life\", \"To provide a contrast to statues with a decorative function\", \"To suggest the rigid, unchanging Egyptian philosophical attitudes\"], \"answer\": \"B\", \"explanation\": \"이집트 조각상의 '정면성(frontality)'은 장식용이 아니라 신, 왕, 망자를 위한 의식 절차에서 의식 수행자와 상호작용하기 위한 기능적 목적에서 비롯된 것입니다.\"}"
+  },
+  {
+    "topic": "Biology",
+    "type": "FULL",
+    "content_json": "{\"passage\": \"Survival and successful reproduction usually require the activities of animals to be coordinated with predictable events around them. ... Almost universally, biologists accept the idea that all eukaryotes (a category that includes most organisms except bacteria and certain algae) have internal clocks.\", \"question\": \"The word 'persistent' in the passage is closest in meaning to\", \"options\": [\"adjusted\", \"strong\", \"enduring\", \"predicted\"], \"answer\": \"C\", \"explanation\": \"생체 시계의 리듬이 외부 자극 없이도 지속된다는 문맥이므로 'persistent'는 '지속적인, 오래가는'의 의미인 'enduring'과 가장 가깝습니다.\"}"
+  },
+  {
+    "topic": "Social Science",
+    "type": "FULL",
+    "content_json": "{\"passage\": \"Young children are trusting of commercial advertisements in the media, and advertisers have sometimes been accused of taking advantage of this trusting outlook. ... techniques that make it difficult for children to judge the true size, action, performance, or construction of a toy.\", \"question\": \"Which of the following is NOT mentioned in paragraph 1 as being a difficult judgment for children to make about advertised toys?\", \"options\": [\"How big the toys are\", \"How much the toys cost\", \"What the toys can do\", \"How the toys are made\"], \"answer\": \"B\", \"explanation\": \"지문에서는 장난감의 크기(size), 동작(action), 성능(performance), 구조(construction)를 판단하기 어렵다고 언급했지만, 가격(cost)에 대해서는 언급하지 않았습니다.\"}"
+  },
+  {
+    "topic": "Environment",
+    "type": "FULL",
+    "content_json": "{\"passage\": \"Desertification is accomplished primarily through the loss of stabilizing natural vegetation and the subsequent accelerated erosion of the soil by wind and water. ... In some regions, the increase in desert areas is occurring largely as the result of a trend toward drier climatic conditions.\", \"question\": \"The word 'delicate' in the passage is closest in meaning to\", \"options\": [\"fragile\", \"predictable\", \"complex\", \"valuable\"], \"answer\": \"A\", \"explanation\": \"사막화가 진행되는 접경 지역이 균형이 깨지기 쉬운 상태임을 나타내므로 'delicate'는 'fragile(취약한, 부서지기 쉬운)'과 가장 가깝습니다.\"}"
+  },
+  {
+    "topic": "History",
+    "type": "FULL",
+    "content_json": "{\"passage\": \"Belief in this ice-free corridor began to crumble when paleoecologist Glen MacDonald demonstrated that some of the most important radiocarbon dates used to support the existence of an ice-free corridor were incorrect. ... Support is growing for the alternative theory that people moved southward along the Northwest Coast.\", \"question\": \"The word 'persuasively' in the passage is closest in meaning to\", \"options\": [\"aggressively\", \"inflexibly\", \"convincingly\", \"carefully\"], \"answer\": \"C\", \"explanation\": \"문맥상 주장이 논리적으로 설득력이 있다는 의미이므로 'persuasively'는 'convincingly(설득력 있게)'와 동의어입니다.\"}"
+  }
+]

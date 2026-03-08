@@ -1,0 +1,84 @@
+version: "2"
+type: backend
+tech_stack:
+  - Node.js
+  - Express
+  - Prisma
+  - SQLite
+  - Google Generative AI
+apis:
+  - path: /api/generate-bite
+    method: POST
+    description: Generate a new TOEFL problem or fetch a reused one.
+    auth_required: false
+    params:
+      - name: topic
+        type: string
+        required: true
+      - name: persona
+        type: string
+        required: false
+  - path: /api/chat-tutor
+    method: POST
+    description: Chat with AI Tutor about a specific question.
+    auth_required: false
+    params:
+      - name: message
+        type: string
+        required: true
+      - name: question_context
+        type: object
+        required: true
+      - name: persona
+        type: string
+        required: false
+  - path: /api/save-result
+    method: POST
+    description: Save user's answer and time spent.
+    auth_required: false
+    params:
+      - name: userId
+        type: string
+        required: true
+      - name: questionId
+        type: string
+        required: true
+      - name: userAnswer
+        type: string
+        required: true
+      - name: isCorrect
+        type: boolean
+        required: true
+      - name: timeSpent
+        type: number
+        required: false
+  - path: /api/get-summary
+    method: POST
+    description: Get AI analysis of recent mistakes.
+    auth_required: false
+    params:
+      - name: userId
+        type: string
+        required: true
+      - name: persona
+        type: string
+        required: false
+features:
+  - name: Problem Generation
+    description: AI-powered TOEFL reading passage and question generation.
+    api_calls:
+      - method: POST
+        endpoint: /api/generate-bite
+  - name: AI Tutoring
+    description: Interactive tutoring based on specific questions and user persona.
+    api_calls:
+      - method: POST
+        endpoint: /api/chat-tutor
+  - name: Progress Tracking
+    description: Saving and analyzing user performance data.
+    api_calls:
+      - method: POST
+        endpoint: /api/save-result
+      - method: POST
+        endpoint: /api/get-summary
+known_limitations: []

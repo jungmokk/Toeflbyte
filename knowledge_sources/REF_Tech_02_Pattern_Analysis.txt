@@ -1,0 +1,82 @@
+=== [KNOWLEDGE SOURCE: Environment_Technology] ===
+Source: https://www.examenglish.com/TOEFL/XML/toefl_reading2.xml
+Title: Smart_Energy
+
+--- [PART 1: BITE-SIZED PASSAGE ANALYSIS] ---
+
+[SECTION 2]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: The next few decades will see great changes in the way energy is supplied and used.  In some major oil producing nations, 'peak oil' has already been reached, and there are increasing fears of global warming.  Consequently, many countries are focusing on the switch to a low carbon economy. This tran...
+
+[SECTION 3]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: Smart Grid technology basically involves the application of a computer system to the electricity network.  The computer system can be used to collect information about supply and demand and improve engineer's ability to manage the system.  With better information about electricity demand, the networ...
+
+[SECTION 4]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: Smart Grid technology offers benefits to the consumer too.  They will be able to collect real-time information on their energy use for each appliance.  Varying tariffs throughout the day will give customers the incentive to use appliances at times when supply greatly exceeds demand, leading to great...
+
+[SECTION 5]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: With these changes comes a range of challenges.  The first involves managing the supply and demand.  Sources of renewable energy, such as wind, wave and solar, are notoriously unpredictable, and nuclear power, which is also set to increase as nations switch to alternative energy sources, is inflexib...
+
+[SECTION 6]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: A second problem is the fact that many renewable power generation sources are located in  remote  areas, such as windy uplands and coastal regions, where there is currently a lack of electrical infrastructure.  New infrastructures therefore must be built.  Thankfully, with improved smart technology,...
+
+[SECTION 7]
+LOGIC: Analysis suggests focus on Evidence-based Argument
+TEXT: Although Smart Technology is still in its infancy, pilot schemes to promote and test it are already  underway .  Consumers are currently testing the new smart meters which can be used in their homes to manage electricity use.  There are also a number of demonstrations being planned to show how the s...
+
+
+--- [PART 2: QUESTION PATTERN & DISTRACTOR LOGIC] ---
+
+Q: According to paragraph 1, what has happened in some oil producing countries?
+ANSWER: B
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Where in  paragraph 1  can the following sentence be placed?   There is also likely more electricity generation centres, as households and communities take up the opportunity to install photovoltaic cells and small scale wind turbines.
+ANSWER: C
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Which of the following is NOT a benefit of Smart Grid technology to consumers?
+ANSWER: D
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: According to  paragraph 4 , what is the problem with using renewable sources of power?
+ANSWER: C
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: In  paragraph 6 , what can be inferred about cities in the future?
+ANSWER: B
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: The word ' remote ' in  paragraph 5  could be best replace by:
+ANSWER: A
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: The word ' underway ' in  paragraph 6  is closest in meaning to:
+ANSWER: D
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: 17  What is the main idea of the final paragraph? ( paragraph 6 ).
+ANSWER: D
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: In paragraph 6, what can be inferred about the introduction of Smart Grid Technology?
+ANSWER: A
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
+
+Q: Which  THREE  of the aspects below are answered in the passage?
+ANSWER: B, C, E
+EVIDENCE: Logic derives from direct passage mention/inference.
+DISTRACTOR TRAP: Commonly uses 'word-overlap' (using passage words in wrong context) or 'over-generalization'.
