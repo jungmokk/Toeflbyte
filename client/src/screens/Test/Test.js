@@ -89,7 +89,6 @@ const Test = ({ navigation, route }) => {
       
       setCurrentBite({
         ...parsedBite,
-        id: reviewBite.question.id
       });
       setLoading(false);
     } else {
@@ -99,6 +98,7 @@ const Test = ({ navigation, route }) => {
 
   const loadNewBite = async () => {
     setLoading(true);
+    setCurrentBite(null); // 이전 문제 확실히 비우기
     setSelectedAnswer(null);
     setIsCorrect(null);
     try {
@@ -118,12 +118,21 @@ const Test = ({ navigation, route }) => {
         'Economics of the Great Depression',
         'Environmental Science and Climate Change',
         'Psychology of Cognitive Development',
-        'Early American Literature'
+        'Early American Literature',
+        'Linguistics and Language Evolution',
+        'Microbiology of Extremophiles',
+        'Modern Architecture Movements'
       ];
       
+      // 토픽을 랜덤하게 섞거나, Home에서 넘어온 토픽이 없으면 무조건 랜덤
       const selectedTopic = route.params?.topic || topics[Math.floor(Math.random() * topics.length)];
-      await generateBite(selectedTopic);
-      deductCredits(5);
+      console.log(`[Load-Bite] Requesting new bite for topic: ${selectedTopic}`);
+      const res = await generateBite(selectedTopic);
+      
+      // Only deduct if it's NOT a reused question
+      if (res && !res.reused) {
+        deductCredits(5);
+      }
     } catch (error) {
       Alert.alert('오류', '문제를 생성하지 못했습니다. 크레딧을 확인해 주세요.');
       navigation.goBack();
@@ -367,6 +376,21 @@ const Test = ({ navigation, route }) => {
           >
             <MessageCircle color={COLORS.white} size={20} />
             <Text style={styles.chatButtonText}>일타강사 해설 듣기 (-1C)</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.nextButton}
+            onPress={() => loadNewBite()}
+          >
+            <Zap color={COLORS.primary} size={20} />
+            <Text style={styles.nextButtonText}>해설 생략하고 다음 문제</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.finishButton}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.finishButtonText}>그만 풀기</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -615,6 +639,33 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  nextButton: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+    gap: 8,
+  },
+  nextButtonText: {
+    color: COLORS.primary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  finishButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  finishButtonText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });
 

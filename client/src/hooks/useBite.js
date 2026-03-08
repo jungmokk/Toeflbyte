@@ -18,13 +18,10 @@ const useBite = () => {
       
       if (response.data.success) {
         setReused(response.data.reused || false);
-        // 서버에서 온 데이터가 content_json 문자열이면 파싱해서 저장
-        let biteData = response.data.data;
-        if (typeof biteData.content_json === 'string') {
-          const content = JSON.parse(biteData.content_json);
-          biteData = { ...biteData, ...content };
-        }
-        setCurrentBite(biteData);
+        // 서버에서 온 데이터 가공
+        const biteData = response.data.data;
+        // DB ID를 가장 마지막에 덮어씌워서 AI가 생성한 ID(있는 경우)에 오염되지 않게 보호
+        setCurrentBite({ ...biteData, id: biteData.id });
         return response.data;
       }
     } catch (error) {

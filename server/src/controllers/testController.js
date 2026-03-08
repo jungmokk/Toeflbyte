@@ -19,43 +19,44 @@ export const generateBite = async (req, res) => {
     if (solvedError) throw solvedError;
     const solvedIds = solvedResults ? solvedResults.map(r => r.questionId) : [];
 
-    // 2. DB 중심: 해당 주제와 타입에 맞는 안 푼 문제 검색
-    let query = supabase
+    // 2. DB 중심: 해당 주제와 타입에 맞는 문제들 검색
+    let { data: questions, error: fetchError } = await supabase
       .from('BiteQuestion')
       .select('*')
       .eq('topic', topic)
       .eq('type', type);
     
-    if (solvedIds.length > 0) {
-      const uniqueSolvedIds = [...new Set(solvedIds)];
-      uniqueSolvedIds.forEach(id => {
-        query = query.neq('id', id);
-      });
-    }
-
-
-
-    const { data: existingQuestion, error: fetchError } = await query
-      .order('createdAt', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
     if (fetchError) throw fetchError;
 
-    if (existingQuestion) {
-      console.log(`[DB-Hit] Reusing unsolved question for topic: ${topic}`);
+    // 3. 자바스크립트 레벨에서 안 푼 문제 필터링 (DB 필터보다 더 확실함)
+    const solvedIdsSet = new Set(solvedIds.map(id => String(id)));
+    const unsolvedQuestions = (questions || []).filter(q => !solvedIdsSet.has(String(q.id)));
+
+    if (unsolvedQuestions.length > 0) {
+      // 안 푼 문제 중 랜덤으로 하나 선택 (매번 똑같은 최신 문제만 나오지 않게 함)
+      const randomIndex = Math.floor(Math.random() * unsolvedQuestions.length);
+      const existingQuestion = unsolvedQuestions[randomIndex];
+      
+      console.log(`[DB-Hit] Found ${unsolvedQuestions.length} unsolved questions for topic: ${topic}. Choosing random index: ${randomIndex}`);
+      
+      const content = typeof existingQuestion.content_json === 'string' 
+        ? JSON.parse(existingQuestion.content_json) 
+        : existingQuestion.content_json;
+
       return res.json({
         success: true,
         data: {
-          ...JSON.parse(existingQuestion.content_json),
-          id: existingQuestion.id
+          ...content,
+          id: existingQuestion.id,
+          topic: existingQuestion.topic
         },
         reused: true,
         credits_used: 0 
       });
     }
 
-    // 3. AI 기반 생성
+    // 4. AI 기반 신규 생성 (DB에 안 푼 문제가 없을 때만)
+    console.log(`[Hybrid-Flow] No unsolved DB match (Solved: ${solvedIds.length}, Total in DB: ${questions?.length || 0}). Generating new ${type} from AI for topic: ${topic}`);
     const lengthGuideline = type === 'SHORT' 
       ? "PASSAGE LENGTH: Maximum 100 words. Focus on a single summary paragraph. Achieve a 1-minute completion time."
       : "PASSAGE LENGTH: 150-200 words. standard TOEFL short-form style.";

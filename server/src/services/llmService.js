@@ -27,35 +27,12 @@ class LLMService {
 
   /**
    * Generates structured content (TOFEL Bite)
-   * Focuses on DeepSeek first, then falls back to Gemini
+   * Focuses on Gemini-Flash for speed and cost-effectiveness
    */
   async generateContent(systemPrompt, userPrompt) {
-    // Try DeepSeek first if available
-    if (this.openai) {
+    if (this.genAI) {
       try {
-        console.log("Generating with DeepSeek...");
-        const response = await this.openai.chat.completions.create({
-          model: "deepseek-chat",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          response_format: { type: 'json_object' }, // DeepSeek-V3 supports JSON mode
-          stream: false
-        });
-
-        const content = response.choices[0].message.content;
-        return JSON.parse(content);
-      } catch (error) {
-        console.error("DeepSeek API Error, falling back to Gemini:", error.message);
-        // Fall back to Gemini if it exists
-      }
-    }
-
-    // Fallback to Gemini
-    if (this.geminiModel) {
-      try {
-        console.log("Generating with Gemini (Fallback)...");
+        console.log("Generating with Gemini (Primary for speed)...");
         const result = await this.geminiModel.generateContent([
           { text: systemPrompt },
           { text: userPrompt }
@@ -65,12 +42,47 @@ class LLMService {
         text = text.replace(/```json/g, "").replace(/```/g, "").trim();
         return JSON.parse(text);
       } catch (error) {
-        console.error("Gemini API Error (Fallback):", error.message);
+        console.error("Gemini API Error, falling back to DeepSeek:", error.message);
+      }
+    }
+
+    if (this.openai) {
+      try {
+        console.log("Generating with DeepSeek (Fallback)...");
+        const response = await this.openai.chat.completions.create({
+          model: "deepseek-chat",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+        });
+        return JSON.parse(response.choices[0].message.content);
+      } catch (error) {
+        console.error("DeepSeek API Error (Fallback):", error.message);
         throw error;
       }
     }
 
-    throw new Error("No LLM service (DeepSeek or Gemini) is available.");
+    throw new Error("No LLM service available.");
+  }
+
+  /**
+   * Fast word definition for UI interaction
+   */
+  async defineWord(word, context) {
+    const systemPrompt = "You are a helpful TOEFL vocabulary assistant. Return JSON: { \"meaning\": \"Short Korean meaning\", \"example\": \"Short English sentence using the word in TOEFL style\" }";
+    const userPrompt = `Define '${word}' based on this context: '${context}'`;
+    
+    // Always use Gemini for speed in UI
+    const result = await this.geminiModel.generateContent([
+      { text: systemPrompt },
+      { text: userPrompt }
+    ]);
+    const response = await result.response;
+    let text = response.text();
+    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(text);
   }
 
   /**

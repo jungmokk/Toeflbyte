@@ -62,6 +62,13 @@ const Chat = ({ route, navigation }) => {
   const handleSendMessage = async () => {
     if (!input.trim() || isTyping) return;
     
+    // Auto-save keywords once at start
+    if (messages.length === 0 && context.keyWords) {
+      context.keyWords.forEach(kw => {
+        saveWord(kw.word, kw.meaning, context.passage).catch(() => {});
+      });
+    }
+
     const userMsg = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
