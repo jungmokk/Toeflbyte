@@ -10,6 +10,7 @@ import { ChevronLeft, Info, CheckCircle2, XCircle, ChevronRight, HelpCircle, Zap
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { API_URL } from '../../api/config';
+import i18n from '../../i18n';
 
 const ReviewDetail = ({ navigation, route }) => {
   const { bite } = route.params;
@@ -36,7 +37,8 @@ const ReviewDetail = ({ navigation, route }) => {
     try {
       const response = await axios.post(`${API_URL}/ai/define-word`, { 
         word: cleanWord,
-        context: parsedBite.passage
+        context: parsedBite.passage,
+        language: i18n.language
       });
       setWordMeaning(response.data);
     } catch (error) {

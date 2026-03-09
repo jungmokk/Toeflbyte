@@ -12,7 +12,8 @@
     "close": "關閉",
     "back": "返回",
     "see_all": "查看全部",
-    "new": "NEW"
+    "new": "NEW",
+    "beta": "BETA"
   },
   "home": {
     "welcome": "你好，考生！",
@@ -24,7 +25,10 @@
     "start_subtitle": "使用實戰真題進行訓練",
     "short_byte": "通勤1分鐘挑戰 (Short Byte) 🚌",
     "history": "學習紀錄",
-    "store": "商店"
+    "store": "商店",
+    "day": "日",
+    "wpm": "WPM",
+    "premium_expected_title": "今年度預測真題"
   },
   "chat": {
     "title": "Star Tutor",

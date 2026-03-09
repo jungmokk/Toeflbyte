@@ -1,5 +1,6 @@
 import axios from 'axios';
 import useStore from '../store/useStore';
+import i18n from '../i18n';
 
 import { API_BASE_URL } from '../config/apiConfig';
 
@@ -12,7 +13,7 @@ const useBite = () => {
     try {
       const url = `${BASE_URL}/generate-bite`;
       const response = await axios.post(url, 
-        { topic, persona },
+        { topic, persona, language: i18n.language },
         { headers: { 'x-user-id': userId } }
       );
       
@@ -56,7 +57,7 @@ const useBite = () => {
   const getTutorChat = async (message, context, history = []) => {
     try {
       const response = await axios.post(`${BASE_URL}/chat-tutor`,
-        { message, question_context: context, persona, history },
+        { message, question_context: context, persona, history, language: i18n.language },
         { headers: { 'x-user-id': userId } }
       );
       return response.data;
@@ -88,7 +89,8 @@ const useBite = () => {
     try {
       const response = await axios.post(`${BASE_URL}/get-summary`, {
         userId,
-        persona
+        persona,
+        language: i18n.language
       });
       return response.data;
     } catch (error) {

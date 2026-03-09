@@ -6,10 +6,11 @@ import {
   TouchableOpacity, 
   ScrollView, 
   Modal, 
-  Pressable,
   Switch,
   Alert,
-  TextInput
+  TextInput,
+  StatusBar,
+  Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -35,8 +36,9 @@ import { supabase } from '../../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import { useTranslation } from 'react-i18next';
 import { COLORS } from '../../constants/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
 
 const adUnitId = process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID || TestIds.REWARDED;
 
@@ -73,7 +75,7 @@ const Settings = () => {
       },
     );
 
-    const unsubscribeClosed = rewarded.addAdEventListener(RewardedAdEventType.CLOSED, () => {
+    const unsubscribeClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
       setAdLoaded(false);
       rewarded.load(); // Load next ad
     });
@@ -120,7 +122,7 @@ const Settings = () => {
   const [nickname, setNickname] = useState('');
 
   const handleUpdateProfile = () => {
-    alert('프로필 정보가 저장되었습니다.');
+    alert(t('settings.save_profile_success'));
     setProfileModalVisible(false);
   };
 
@@ -224,7 +226,7 @@ const Settings = () => {
       const url = 'https://docs.google.com/document/d/1SaJXv_DSszGrnBUGfPA_gwe3K2DFF8Mj6222x-K5GD8/edit?usp=sharing';
       await WebBrowser.openBrowserAsync(url);
     } catch (error) {
-      alert('공식 페이지를 열 수 없습니다.');
+      alert(t('settings.privacy_open_error') || 'Failed to open policy page.');
     }
   };
 
@@ -350,6 +352,36 @@ const Settings = () => {
               {persona === opt.id && <CheckCircle2 size={24} color="#3B82F6" />}
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* Language Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.language_title') || 'Language'}</Text>
+          <View style={styles.languageContainer}>
+            {[
+              { id: 'ko', label: '한국어' },
+              { id: 'ja', label: '日本語' },
+              { id: 'zh-TW', label: '繁體中文' },
+              { id: 'es', label: 'Español' }
+            ].map((lang) => (
+              <TouchableOpacity
+                key={lang.id}
+                style={[
+                  styles.languageOption,
+                  i18n.language === lang.id && styles.languageOptionSelected
+                ]}
+                onPress={() => {
+                  i18n.changeLanguage(lang.id);
+                  AsyncStorage.setItem('user-language', lang.id);
+                }}
+              >
+                <Text style={[
+                  styles.languageText,
+                  i18n.language === lang.id && styles.languageTextSelected
+                ]}>{lang.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* General Settings */}
@@ -970,6 +1002,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#CBD5E1',
     lineHeight: 22,
+  },
+  languageContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  languageOption: {
+    backgroundColor: '#334155',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  languageOptionSelected: {
+    borderColor: '#3B82F6',
+    backgroundColor: '#1E293B',
+  },
+  languageText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  languageTextSelected: {
+    color: '#3B82F6',
   }
 });
 

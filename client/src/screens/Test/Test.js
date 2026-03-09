@@ -241,7 +241,8 @@ const Test = ({ navigation, route }) => {
       console.log(`[Define-Word] Fetching for: ${cleanWord}`);
       const response = await axios.post(`${API_URL}/ai/define-word`, { 
         word: cleanWord,
-        context: currentBite.passage
+        context: currentBite.passage,
+        language: i18n.language
       });
       setWordMeaning(response.data);
     } catch (error) {

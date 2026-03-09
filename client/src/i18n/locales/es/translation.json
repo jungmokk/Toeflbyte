@@ -1,0 +1,163 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "error": "Error",
+    "success": "Éxito",
+    "retry": "Reintentar",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "see_all": "Ver todo",
+    "new": "NUEVO"
+  },
+  "home": {
+    "welcome": "¡Hola, Estudiante!",
+    "subWelcome": "Es hora de tu Reading Byte de hoy ⚡️",
+    "accuracy": "Precisión",
+    "reading_speed": "Velocidad",
+    "credits": "Créditos",
+    "start_reading": "Empezar Reading de Hoy",
+    "start_subtitle": "Entrena con preguntas reales",
+    "short_byte": "Short Byte de 1 minuto 🚌",
+    "history": "Historial",
+    "store": "Tienda",
+    "premium_expected_title": "Predicción HOT de este año"
+  },
+  "chat": {
+    "title": "Star Tutor",
+    "premium": "PREMIUM",
+    "status": "Explicando en tiempo real...",
+    "initial_query": "¡Por favor, dame una explicación profunda de este problema!",
+    "keyword_title": "Guardar palabras clave",
+    "no_keywords": "Lee las explicaciones para encontrar palabras importantes.",
+    "input_placeholder": "Escribe tu pregunta aquí...",
+    "save_success": "Guardado con éxito",
+    "save_msg": "La palabra '{{word}}' ha sido guardada en tus notas.",
+    "already_saved": "Esta palabra ya está guardada.",
+    "save_error": "Hubo un problema al guardar la palabra."
+  },
+  "review": {
+    "title": "Notas de IA",
+    "accuracy_label": "Precisión total",
+    "incorrect_label": "Preguntas incorrectas",
+    "instructor_comment_title": "🔥 Comentario del Instructor",
+    "vocab_note_link": "Mis notas de vocabulario",
+    "weak_topics_title": "Top 3 Temas Débiles",
+    "incorrect_list_title": "Lista de Incorrectas",
+    "no_data": "No hay suficientes datos.",
+    "no_incorrect": "¡No hay errores. Perfecto!",
+    "unknown_date": "Fecha desconocida"
+  },
+  "review_detail": {
+    "title": "Análisis de Errores",
+    "passage": "Pasaje (Passage)",
+    "question_options": "Pregunta y Opciones",
+    "instructor_explanation": "Explicación detallada",
+    "default_explanation": "Se ha generado una explicación detallada para este problema.",
+    "key_vocab": "Vocabulario clave de hoy",
+    "ask_tutor": "Preguntar más al tutor",
+    "learn_done": "Aprendizaje completado",
+    "define_error": "No se pudo obtener la información de la palabra."
+  },
+  "vocabulary": {
+    "title": "Vocabulario",
+    "quiz_challenge": "Desafío de Quiz",
+    "quiz_desc": "Prueba tus conocimientos con {{count}} palabras.",
+    "quiz_unlock_desc": "Guarda al menos 3 palabras para desbloquear el quiz.",
+    "no_vocab": "No hay palabras guardadas.",
+    "empty_subtext": "¡Mantén presionado una palabra para guardarla!",
+    "delete_title": "Eliminar palabra",
+    "delete_confirm": "¿Quieres eliminar '{{word}}' de tus notas?",
+    "quiz_beta_title": "Quiz de Vocabulario (Beta)",
+    "quiz_beta_desc": "La IA está generando un quiz basado en tus palabras. ¡Pronto disponible!"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "admin_mode": "Modo Administrador",
+    "admin_mode_activated": "¡Modo Administrador activado!",
+    "admin_charge": "Cargar 10,000 créditos",
+    "admin_charge_success": "¡10,000 créditos cargados!",
+    "admin_charge_fail": "Error al cargar créditos.",
+    "credits_label": "Mis créditos",
+    "charge": "Cargar",
+    "premium_banner_title": "¡Membresía Premium!",
+    "premium_banner_desc": "Shadowing ilimitado y 500P gratis",
+    "free_credits_title": "Obtener créditos gratis",
+    "watch_ad_title": "Ver anuncio por 5P",
+    "watch_ad_desc": "Mira un video para estudiar gratis.",
+    "ad_not_ready": "Cargando anuncio. Reintenta pronto.",
+    "ad_reward_success": "¡Recibiste {{amount}} créditos!",
+    "timer_pressure_title": "Modo de Presión de Tiempo",
+    "timer_pressure_desc": "Temporizador de 90 segundos por pregunta.",
+    "persona_title": "Personalidad del Tutor IA",
+    "persona_tsun_title": "Instructor Estricto (Tsundere)",
+    "persona_tsun_desc": "Te dirá la verdad sin rodeos.",
+    "persona_kind_title": "Tutor Amable y Detallado",
+    "persona_kind_desc": "Explica todo paso a paso con amabilidad.",
+    "profile_settings": "Ajustes de Perfil",
+    "notification_settings": "Notificaciones",
+    "security_and_auth": "Seguridad",
+    "privacy_policy": "Política de Privacidad",
+    "account_delete": "Eliminar cuenta",
+    "logout": "Cerrar sesión",
+    "logout_confirm": "¿Quieres cerrar sesión?",
+    "delete_account_confirm": "¿Seguro que quieres eliminar tu cuenta? Perderás todo el progreso.",
+    "nickname": "Apodo",
+    "nickname_placeholder": "Ingresa tu apodo",
+    "save_profile": "Guardar",
+    "save_profile_success": "Perfil actualizado.",
+    "charge_modal_title": "Cargar créditos",
+    "charge_modal_subtitle": "Elige un plan",
+    "popular": "POPULAR",
+    "charge_success": "¡Cargaste {{amount}} créditos!",
+    "upgrade_success": "¡Bienvenido a Premium!",
+    "daily_notification": "Aviso diario",
+    "reward_notification": "Avisos de recompensas"
+  },
+  "login": {
+    "title": "Iniciar Sesión",
+    "subtitle": "La mejor lectura de 1 minuto por IA",
+    "google_continue": "Continuar con Google",
+    "or": "o"
+  },
+  "onboarding": {
+    "skip": "Saltar",
+    "next": "Siguiente",
+    "start": "Recibir 50P y empezar",
+    "slides": {
+      "1": {
+        "title": "TOEFL Byte\nde 1 minuto",
+        "description": "Olvida los pasajes largos.\nEntrena en el bus con 1 párrafo\ny 1 pregunta en un minuto."
+      },
+      "2": {
+        "title": "Comentarios reales\nde Star Tutor",
+        "description": "Explica por qué fallaste\ncon comentarios directos y claros."
+      },
+      "3": {
+        "title": "Vocabulario\nesilo Tinder",
+        "description": "Desliza para guardar palabras.\nIgnora lo que ya sabes,\nguarda lo que necesitas aprender."
+      },
+      "4": {
+        "title": "¡50 Créditos Gratis!",
+        "description": "Regístrate ahora y recibe\n50 créditos de regalo."
+      }
+    }
+  },
+  "test": {
+    "title": "Byte de Hoy",
+    "focus_mode": "Focus Mode Activo",
+    "reused_badge": "🔥 {{count}} estudiantes resolvieron esto",
+    "timeout_title": "¡Tiempo agotado!",
+    "timeout_msg": "Pasaron 90 segundos. Mira el feedback del tutor.",
+    "loading_reused": "Cargando puntos clave...",
+    "loading_new": "El tutor está analizando patrones recientes...",
+    "generate_error": "No se pudo generar la pregunta.",
+    "ask_tutor_btn": "Explicación del Tutor (-1C)",
+    "next_problem_btn": "Siguiente problema",
+    "stop_learning_btn": "Dejar de estudiar"
+  }
+}

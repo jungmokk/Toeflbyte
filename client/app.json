@@ -13,7 +13,8 @@
       "backgroundColor": "#0A0E21"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.toeflbyte.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,8 +31,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-5136549253813943~6639965197",
-          "iosAppId": "ca-app-pub-5136549253813943~6639965197"
+          "androidAppId": "ca-app-pub-5136549253813943~9062980375",
+          "iosAppId": "ca-app-pub-5136549253813943~9062980375"
         }
       ],
       "expo-sharing"

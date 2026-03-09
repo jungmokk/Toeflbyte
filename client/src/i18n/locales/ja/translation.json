@@ -12,7 +12,8 @@
     "close": "閉じる",
     "back": "戻る",
     "see_all": "すべて見る",
-    "new": "NEW"
+    "new": "NEW",
+    "beta": "BETA"
   },
   "home": {
     "welcome": "こんにちは、受験生さん！",
@@ -24,7 +25,10 @@
     "start_subtitle": "実戦問題で訓練しましょう",
     "short_byte": "通勤・通学1分（Short Byte）🚌",
     "history": "学習記録",
-    "store": "ストア"
+    "store": "ストア",
+    "day": "日",
+    "wpm": "WPM",
+    "premium_expected_title": "今年の予想的中"
   },
   "chat": {
     "title": "Star Tutor",

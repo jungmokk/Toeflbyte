@@ -8,8 +8,12 @@ import {
   Target, 
   TrendingUp, 
   ChevronRight, 
-  Clock 
+  Clock,
+  Flame,
+  Sparkles
 } from 'lucide-react-native';
+
+import { Alert } from 'react-native';
 
 import AnimatedButton from '../../components/AnimatedButton';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
@@ -60,13 +64,13 @@ const Home = ({ navigation }) => {
               resizeMode="contain"
             />
             <View>
-              <Text style={styles.welcomeText}>{t('welcome')}</Text>
-              <Text style={styles.subWelcome}>{t('subWelcome')}</Text>
+              <Text style={styles.welcomeText}>{t('home.welcome')}</Text>
+              <Text style={styles.subWelcome}>{t('home.subWelcome')}</Text>
             </View>
           </View>
           <View style={styles.streakBadge}>
             <Zap fill="#FFD700" color="#FFD700" size={16} />
-            <Text style={styles.streakText}>{stats.streak} DAY</Text>
+            <Text style={styles.streakText}>{stats.streak} {t('home.day') || 'DAY'}</Text>
           </View>
         </View>
 
@@ -74,17 +78,17 @@ const Home = ({ navigation }) => {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Target color={COLORS.primary} size={24} />
-            <Text style={styles.statLabel}>{t('accuracy')}</Text>
+            <Text style={styles.statLabel}>{t('home.accuracy')}</Text>
             <Text style={styles.statValue}>{stats.accuracy}%</Text>
           </View>
           <View style={styles.statCard}>
             <TrendingUp color={COLORS.success} size={24} />
-            <Text style={styles.statLabel}>{t('reading_speed')}</Text>
-            <Text style={styles.statValue}>{stats.wpm} <Text style={{fontSize: 12}}>WPM</Text></Text>
+            <Text style={styles.statLabel}>{t('home.reading_speed')}</Text>
+            <Text style={styles.statValue}>{stats.wpm} <Text style={{fontSize: 12}}>{t('home.wpm') || 'WPM'}</Text></Text>
           </View>
           <View style={styles.statCard}>
             <Zap color={COLORS.error} size={24} />
-            <Text style={styles.statLabel}>{t('credits')}</Text>
+            <Text style={styles.statLabel}>{t('home.credits')}</Text>
             <Text style={styles.statValue}>{credits}</Text>
           </View>
         </View>
@@ -98,17 +102,49 @@ const Home = ({ navigation }) => {
             <BookOpen color={COLORS.white} size={32} />
           </View>
           <View style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>{t('start_reading')}</Text>
-            <Text style={styles.actionSubtitle}>{t('start_subtitle')}</Text>
+            <Text style={styles.actionTitle}>{t('home.start_reading')}</Text>
+            <Text style={styles.actionSubtitle}>{t('home.start_subtitle')}</Text>
           </View>
           <ChevronRight color="rgba(255,255,255,0.5)" size={24} />
         </AnimatedButton>
 
+        {/* Premium Beta Preview */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>HOT! {t('home.premium_expected_title')}</Text>
+          <View style={styles.betaBadge}>
+            <Text style={styles.betaText}>{t('common.beta') || 'BETA'}</Text>
+          </View>
+        </View>
+
+        <AnimatedButton 
+          style={styles.premiumSectionCard}
+          onPress={() => Alert.alert(
+            "Coming Soon!", 
+            "올해의 최신 시사 기반 예상 기출 기능은 현재 베타 준비 중입니다. 출시 시 알림을 드릴까요?",
+            [{ text: "참여하기", onPress: () => alert("알림 예약되었습니다!") }, { text: "닫기" }]
+          )}
+        >
+          <View style={styles.premiumIconContainer}>
+            <Flame color="#FF4D4D" size={28} />
+          </View>
+          <View style={styles.premiumTextContainer}>
+            <View style={styles.badgeRow}>
+              <Text style={styles.premiumBadgeText}>PREMIUM PREDICT</Text>
+              <Sparkles size={14} color="#FFD700" />
+            </View>
+            <Text style={styles.premiumTitle}>2026 HOT! 올해의 예상 기출</Text>
+            <Text style={styles.premiumSubtitle}>실시간 시사 반영 킬러 문항</Text>
+          </View>
+          <View style={styles.premiumPriceTag}>
+            <Text style={styles.premiumPriceText}>30P</Text>
+          </View>
+        </AnimatedButton>
+
         {/* Short Byte Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('short_byte')}</Text>
+          <Text style={styles.sectionTitle}>{t('home.short_byte')}</Text>
           <TouchableOpacity>
-            <Text style={styles.seeAll}>{t('see_all')}</Text>
+            <Text style={styles.seeAll}>{t('common.see_all')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -319,6 +355,83 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: 'bold',
     fontSize: 11,
+  },
+  betaBadge: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  betaText: {
+    color: '#EF4444',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  premiumSectionCard: {
+    backgroundColor: '#1E1B4B', // Deep indigo
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4338CA',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  premiumIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  premiumTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  premiumBadgeText: {
+    color: '#FFD700',
+    fontSize: 10,
+    fontWeight: '900',
+    marginRight: 4,
+    letterSpacing: 0.5,
+  },
+  premiumTitle: {
+    color: '#F8FAFC',
+    fontSize: 17,
+    fontWeight: 'bold',
+  },
+  premiumSubtitle: {
+    color: '#94A3B8',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  premiumPriceTag: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  premiumPriceText: {
+    color: '#FFD700',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 });
 

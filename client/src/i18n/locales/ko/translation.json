@@ -12,7 +12,8 @@
     "close": "닫기",
     "back": "뒤로",
     "see_all": "전체보기",
-    "new": "NEW"
+    "new": "NEW",
+    "beta": "BETA"
   },
   "home": {
     "welcome": "안녕하세요, 수험생님!",
@@ -24,7 +25,10 @@
     "start_subtitle": "실전 기출 문제로 훈련하세요",
     "short_byte": "출퇴근 1분 컷 (Short Byte) 🚌",
     "history": "학습 기록",
-    "store": "상점"
+    "store": "상점",
+    "day": "일",
+    "wpm": "WPM",
+    "premium_expected_title": "올해의 예상 기출"
   },
   "chat": {
     "title": "Star Tutor",
@@ -77,6 +81,7 @@
   "settings": {
     "title": "설정",
     "admin_mode": "관리자 모드",
+    "admin_mode_activated": "관리자 모드가 활성화되었습니다!",
     "admin_charge": "10,000 크레딧 즉시 충전",
     "admin_charge_success": "관리자 권한으로 10,000 크레딧이 충전되었습니다!",
     "admin_charge_fail": "충전에 실패했습니다.",

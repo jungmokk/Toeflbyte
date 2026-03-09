@@ -6,11 +6,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ko from './locales/ko/translation.json';
 import ja from './locales/ja/translation.json';
 import zhTW from './locales/zh-TW/translation.json';
+import es from './locales/es/translation.json';
 
 const resources = {
   ko: { translation: ko },
   ja: { translation: ja },
   'zh-TW': { translation: zhTW },
+  es: { translation: es },
 };
 
 const initI18n = async () => {
@@ -18,7 +20,15 @@ const initI18n = async () => {
   
   if (!savedLanguage) {
     const deviceLanguage = Localization.getLocales()[0].languageCode;
-    savedLanguage = deviceLanguage === 'ja' || deviceLanguage === 'zh' ? (deviceLanguage === 'zh' ? 'zh-TW' : deviceLanguage) : 'ko';
+    const supportedLanguages = ['ko', 'ja', 'zh', 'es'];
+    
+    if (deviceLanguage === 'zh') {
+      savedLanguage = 'zh-TW';
+    } else if (supportedLanguages.includes(deviceLanguage)) {
+      savedLanguage = deviceLanguage;
+    } else {
+      savedLanguage = 'ko'; // Default
+    }
   }
 
   i18n
