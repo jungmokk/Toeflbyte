@@ -98,7 +98,19 @@ const useBite = () => {
     }
   };
 
-  return { generateBite, getTutorChat, saveResult, getSummary };
+  const getRandomBites = async (limit = 5) => {
+    try {
+      const response = await axios.get(`${BASE_URL}/random-bites?limit=${limit}`, {
+        headers: { 'x-user-id': userId }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Fetch Random Bites Error:', error);
+      return { success: false, data: [] };
+    }
+  };
+
+  return { generateBite, getTutorChat, saveResult, getSummary, getRandomBites };
 };
 
 export default useBite;

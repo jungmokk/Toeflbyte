@@ -23,6 +23,16 @@ class LLMService {
       this.geminiModel = this.genAI.getGenerativeModel({ model: "gemini-flash-latest" });
       console.log("LLMService: Gemini initialized.");
     }
+
+    // 3. Qwen (Alibaba DashScope - High efficiency)
+    const qwenKey = process.env.QWEN_API_KEY;
+    if (qwenKey) {
+      this.qwen = new OpenAI({
+        baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        apiKey: qwenKey,
+      });
+      console.log("LLMService: Qwen initialized.");
+    }
   }
 
   /**
@@ -64,22 +74,64 @@ class LLMService {
         throw error;
       }
     }
-
-    throw new Error("No LLM service available.");
   }
 
   /**
-   * Fast word definition for UI interaction
+   * Generates content using Qwen-Plus (Balanced) or Qwen-Flash (Fast)
    */
-  async defineWord(word, context) {
-    const systemPrompt = "You are a helpful TOEFL vocabulary assistant. Return JSON: { \"meaning\": \"Short Korean meaning\", \"example\": \"Short English sentence using the word in TOEFL style\" }";
+  async generateFast(systemPrompt, userPrompt, model = "qwen-plus") {
+    if (this.qwen) {
+      try {
+        console.log(`Generating with Qwen (${model})...`);
+        const response = await this.qwen.chat.completions.create({
+          model: model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+        });
+        return JSON.parse(response.choices[0].message.content);
+      } catch (error) {
+        console.error(`Qwen API Error (${model}):`, error.message);
+      }
+    }
+    // Fallback to existing Gemini if Qwen fails
+    return this.generateContent(systemPrompt, userPrompt);
+  }
+
+  /**
+   * Fast word definition for UI interaction - Uses Qwen-Flash ($0.03/1M)
+   */
+  async defineWord(word, context, language = 'ko') {
+    if (this.qwen) {
+      try {
+        const langNames = { ko: "Korean", ja: "Japanese", "zh-TW": "Traditional Chinese (Taiwan)" };
+        const targetLang = langNames[language] || "Korean";
+        const systemPrompt = `You are a helpful TOEFL vocabulary assistant. Return JSON: { "meaning": "Short ${targetLang} meaning", "example": "Short English sentence using the word in TOEFL style" }`;
+        const userPrompt = `Define '${word}' based on this context: '${context}'`;
+
+        const response = await this.qwen.chat.completions.create({
+          model: "qwen-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+        });
+        return JSON.parse(response.choices[0].message.content);
+      } catch (error) {
+        console.error("Qwen defineWord Error, falling back to Gemini:", error.message);
+      }
+    }
+
+    // Existing Gemini Fallback
+    const langNames = { ko: "Korean", ja: "Japanese", "zh-TW": "Traditional Chinese (Taiwan)" };
+    const targetLang = langNames[language] || "Korean";
+    const systemPrompt = `You are a helpful TOEFL vocabulary assistant. Return JSON: { "meaning": "Short ${targetLang} meaning", "example": "Short English sentence using the word in TOEFL style" }`;
     const userPrompt = `Define '${word}' based on this context: '${context}'`;
     
-    // Always use Gemini for speed in UI
-    const result = await this.geminiModel.generateContent([
-      { text: systemPrompt },
-      { text: userPrompt }
-    ]);
+    const result = await this.geminiModel.generateContent([{ text: systemPrompt }, { text: userPrompt }]);
     const response = await result.response;
     let text = response.text();
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();

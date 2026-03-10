@@ -12,7 +12,31 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://toeflbyte.onrender.com/api",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://fpvtolzqnmbckfjvsnsy.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwdnRvbHpxbm1iY2tmanZzbnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NjY5MDYsImV4cCI6MjA4ODQ0MjkwNn0.AIvrrz04skBmO8hVUf2cnDOIZNLYOgpReSTuWrK5hfw",
+        "EXPO_PUBLIC_ADMOB_APP_ID": "ca-app-pub-5136549253813943~9062980375",
+        "EXPO_PUBLIC_ADMOB_BANNER_ID": "ca-app-pub-5136549253813943/4617303059",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID": "ca-app-pub-5136549253813943/5108946007",
+        "EXPO_PUBLIC_ADMOB_REWARDED_ID": "ca-app-pub-5136549253813943/1333827884"
+      }
+    },
+    "apk": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://toeflbyte.onrender.com/api",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://fpvtolzqnmbckfjvsnsy.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwdnRvbHpxbm1iY2tmanZzbnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NjY5MDYsImV4cCI6MjA4ODQ0MjkwNn0.AIvrrz04skBmO8hVUf2cnDOIZNLYOgpReSTuWrK5hfw",
+        "EXPO_PUBLIC_ADMOB_APP_ID": "ca-app-pub-5136549253813943~9062980375",
+        "EXPO_PUBLIC_ADMOB_BANNER_ID": "ca-app-pub-5136549253813943/4617303059",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID": "ca-app-pub-5136549253813943/5108946007",
+        "EXPO_PUBLIC_ADMOB_REWARDED_ID": "ca-app-pub-5136549253813943/1333827884"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

@@ -14,14 +14,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.toeflbyte.app"
+      "bundleIdentifier": "com.toeflbyte.app",
+      "buildNumber": "4"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0A0E21",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
-      "package": "com.toeflbyte.app"
+      "package": "com.toeflbyte.app",
+      "versionCode": 4,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,7 +35,8 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-5136549253813943~9062980375",
-          "iosAppId": "ca-app-pub-5136549253813943~9062980375"
+          "iosAppId": "ca-app-pub-5136549253813943~9062980375",
+          "userTrackingUsageDescription": "This identifier will be used to provide you personalized ads."
         }
       ],
       "expo-sharing"

@@ -1,7 +1,9 @@
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING } from '../../constants/theme';
 import useStore from '../../store/useStore';
+import useBite from '../../hooks/useBite';
 import { 
   BookOpen, 
   Zap, 
@@ -22,6 +24,10 @@ import { useTranslation } from 'react-i18next';
 const Home = ({ navigation }) => {
   const { t } = useTranslation();
   const { credits, history } = useStore();
+  const { getRandomBites } = useBite();
+  
+  const [randomBites, setRandomBites] = useState([]);
+  const [loadingBites, setLoadingBites] = useState(true);
 
   // Helper function to calculate stats from history
   const calculateStats = () => {
@@ -50,6 +56,17 @@ const Home = ({ navigation }) => {
   };
 
   const stats = calculateStats();
+  
+  useEffect(() => {
+    const fetchBites = async () => {
+      const res = await getRandomBites(5);
+      if (res && res.data) {
+        setRandomBites(res.data);
+      }
+      setLoadingBites(false);
+    };
+    fetchBites();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -59,7 +76,7 @@ const Home = ({ navigation }) => {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Image 
-              source={require('../../../assets/logo.png')} 
+              source={require('../../../assets/icon.png')} 	
               style={styles.logoMini} 
               resizeMode="contain"
             />
@@ -86,17 +103,21 @@ const Home = ({ navigation }) => {
             <Text style={styles.statLabel}>{t('home.reading_speed')}</Text>
             <Text style={styles.statValue}>{stats.wpm} <Text style={{fontSize: 12}}>{t('home.wpm') || 'WPM'}</Text></Text>
           </View>
-          <View style={styles.statCard}>
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => navigation.navigate('Store')}
+            activeOpacity={0.7}
+          >
             <Zap color={COLORS.error} size={24} />
             <Text style={styles.statLabel}>{t('home.credits')}</Text>
             <Text style={styles.statValue}>{credits}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Main Action Button */}
         <AnimatedButton 
           style={styles.mainActionButton}
-          onPress={() => navigation.navigate('Test')}
+          onPress={() => navigation.navigate('Test', { topic: null })}
         >
           <View style={styles.actionIconContainer}>
             <BookOpen color={COLORS.white} size={32} />
@@ -111,18 +132,11 @@ const Home = ({ navigation }) => {
         {/* Premium Beta Preview */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>HOT! {t('home.premium_expected_title')}</Text>
-          <View style={styles.betaBadge}>
-            <Text style={styles.betaText}>{t('common.beta') || 'BETA'}</Text>
-          </View>
         </View>
 
         <AnimatedButton 
           style={styles.premiumSectionCard}
-          onPress={() => Alert.alert(
-            "Coming Soon!", 
-            "올해의 최신 시사 기반 예상 기출 기능은 현재 베타 준비 중입니다. 출시 시 알림을 드릴까요?",
-            [{ text: "참여하기", onPress: () => alert("알림 예약되었습니다!") }, { text: "닫기" }]
-          )}
+          onPress={() => navigation.navigate('Test', { topic: '2026 Hot Trends in Science and Society' })}
         >
           <View style={styles.premiumIconContainer}>
             <Flame color="#FF4D4D" size={28} />
@@ -136,39 +150,51 @@ const Home = ({ navigation }) => {
             <Text style={styles.premiumSubtitle}>실시간 시사 반영 킬러 문항</Text>
           </View>
           <View style={styles.premiumPriceTag}>
-            <Text style={styles.premiumPriceText}>30P</Text>
+            <Text style={styles.premiumPriceText}>5P</Text>
           </View>
         </AnimatedButton>
 
         {/* Short Byte Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('home.short_byte')}</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAll}>{t('common.see_all')}</Text>
+          <TouchableOpacity onPress={() => {
+             setLoadingBites(true);
+             getRandomBites(5).then(res => {
+               if(res?.data) setRandomBites(res.data);
+               setLoadingBites(false);
+             });
+          }}>
+            <Text style={styles.seeAll}>새로고침</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.shortByteList}>
-          {[1, 2].map((item) => (
-            <AnimatedButton 
-              key={item} 
-              style={styles.shortByteCard}
-              onPress={() => navigation.navigate('Test', { 
-                topic: item === 1 ? 'Astronomy and Planetary Formation' : 'Archaeology of Ancient Egypt' 
-              })}
-            >
-              <View style={styles.shortByteIcon}>
-                <Clock color={COLORS.primary} size={20} />
-              </View>
-              <View style={{flex: 1}}>
-                <Text style={styles.shortByteTitle}>천문학: 행성 형성 이론 요약</Text>
-                <Text style={styles.shortByteMeta}>지문 300자 • 문제 1개 • 약 1분</Text>
-              </View>
-              <View style={styles.goBadge}>
-                <Text style={styles.goText}>GO</Text>
-              </View>
-            </AnimatedButton>
-          ))}
+          {loadingBites ? (
+             <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 20 }} />
+          ) : randomBites.length === 0 ? (
+             <Text style={{color: COLORS.textSecondary, textAlign: 'center', padding: 20}}>새로운 문제가 없습니다.</Text>
+          ) : randomBites.map((item, index) => {
+            const content = typeof item.content_json === 'string' ? JSON.parse(item.content_json) : item.content_json;
+            const contentLen = content?.passage ? content.passage.length : 300;
+            return (
+              <AnimatedButton 
+                key={item.id} 
+                style={styles.shortByteCard}
+                onPress={() => navigation.navigate('Test', { topic: item.topic })}
+              >
+                <View style={styles.shortByteIcon}>
+                  <Clock color={COLORS.primary} size={20} />
+                </View>
+                <View style={{flex: 1}}>
+                  <Text style={styles.shortByteTitle} numberOfLines={1}>{item.topic || 'General Topic'}</Text>
+                  <Text style={styles.shortByteMeta}>지문 약 {contentLen}자 • {t('home.time_1min', '약 1분')}</Text>
+                </View>
+                <View style={styles.goBadge}>
+                  <Text style={styles.goText}>GO</Text>
+                </View>
+              </AnimatedButton>
+            );
+          })}
         </View>
 
         <View style={{height: 20}} />

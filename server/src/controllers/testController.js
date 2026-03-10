@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 
 export const generateBite = async (req, res) => {
   try {
-    const { topic = "General Science", userId, persona = 'tsun', type = 'FULL' } = req.body;
+    const { topic = "General Science", userId, persona = 'tsun', type = 'FULL', language = 'ko' } = req.body;
     
     const activeUserId = userId || req.headers['x-user-id'];
     
@@ -20,11 +20,13 @@ export const generateBite = async (req, res) => {
     const solvedIds = solvedResults ? solvedResults.map(r => r.questionId) : [];
 
     // 2. DB 중심: 해당 주제와 타입에 맞는 문제들 검색
-    let { data: questions, error: fetchError } = await supabase
-      .from('BiteQuestion')
-      .select('*')
-      .eq('topic', topic)
-      .eq('type', type);
+    let query = supabase.from('BiteQuestion').select('*').eq('type', type);
+    
+    if (topic && topic !== "General Science") {
+       query = query.eq('topic', topic);
+    }
+    
+    let { data: questions, error: fetchError } = await query;
     
     if (fetchError) throw fetchError;
 
@@ -83,6 +85,9 @@ export const generateBite = async (req, res) => {
       }
     }
 
+    const langNames = { ko: "Korean", ja: "Japanese", "zh-TW": "Traditional Chinese (Taiwan)" };
+    const targetLang = langNames[language] || "Korean";
+
     const systemPrompt = `
 ${masterPrompt}
 
@@ -95,11 +100,12 @@ ${lengthGuideline}
 
 ### CRITICAL GENERATION GUIDELINES:
 1. JSON Output: You MUST output the response in EXACT JSON format.
+2. Language: The passage, question, and options MUST be in English. However, the 'explanation' field MUST be written in ${targetLang}.
 `;
 
-    const userPrompt = `주제 '${topic}'에 기반하여 ${type === 'SHORT' ? '1분 숏 바이트(요약형)' : '표준 숏폼'} 토플 문제 1세트를 생성해 줘.`;
+    const userPrompt = `주제 '${topic}'에 기반하여 ${type === 'SHORT' ? '1분 숏 바이트(요약형)' : '표준 숏폼'} 토플 문제 1세트를 생성해 줘. 해설(explanation)은 반드시 ${targetLang}(으)로 작성해야 해.`;
 
-    const result = await llmService.generateContent(systemPrompt, userPrompt);
+    const result = await llmService.generateFast(systemPrompt, userPrompt, "qwen-plus");
 
     // 4. 생성된 결과를 DB에 저장 (Reusable for future users)
     let savedQuestion = null;
@@ -178,7 +184,7 @@ export const saveResult = async (req, res) => {
 
 export const getSummary = async (req, res) => {
   try {
-    const { userId, persona = 'tsun' } = req.body;
+    const { userId, persona = 'tsun', language = 'ko' } = req.body;
     
     const { data: incorrectAnswers, error } = await supabase
       .from('BiteResult')
@@ -202,9 +208,26 @@ export const getSummary = async (req, res) => {
 
     const historyText = incorrectAnswers.map(a => `Topic: ${a.question.topic}, Q: ${a.question.content_json}`).join("\n");
     
-    const personaStyle = persona === 'kind' 
-      ? "- 말투는 '친절하고 꼼꼼한 과외 선생님' 스타일 (상냥하게 격려)" 
-      : "- 말투는 단호한 '팩폭' 스타일 (예리하게 단점 지적)";
+    const styles = {
+      ko: {
+        kind: "- 말투는 '친절하고 꼼꼼한 과외 선생님' 스타일 (상냥하게 격려)",
+        tsun: "- 말투는 단호한 '팩폭' 스타일 (예리하게 단점 지적)",
+        langName: "Korean"
+      },
+      ja: {
+        kind: "- 口調は「親切で几帳面な家庭教師」のスタイル（優しく励ます）",
+        tsun: "- 口調は断固とした「核心を突く」スタイル（鋭く欠点を指摘）",
+        langName: "Japanese"
+      },
+      "zh-TW": {
+        kind: "- 語氣是「親切細心的家教老師」風格（溫柔地鼓勵）",
+        tsun: "- 語氣是果斷的「毒舌名師」風格（鋭利地指出缺點）",
+        langName: "Traditional Chinese (Taiwan)"
+      }
+    };
+
+    const targetStyle = styles[language] || styles.ko;
+    const personaStyle = targetStyle[persona === 'kind' ? 'kind' : 'tsun'];
 
     const systemPrompt = `
 ${personaGuide}
@@ -218,15 +241,51 @@ ${distractorRule}
 ${personaStyle}
 - 마지막엔 실질적인 해결책을 곁들일 것.
 - 3문장 이내로 짧고 강력하게 요약해.
+- MUST respond in ${targetStyle.langName}.
 `;
 
-    const userPrompt = `학생의 오답 이력:\n${historyText}\n\n위 데이터를 보고 이 학생의 약점이 무엇인지 짧고 굵게 팩폭해주세요.`;
+    const userPrompt = `학생의 오답 이력:\n${historyText}\n\n위 데이터를 보고 이 학생의 약점이 무엇인지 짧고 굵게 분석해주세요. 반드시 ${targetStyle.langName}(으)로 답변해야 합니다.`;
 
-    const summaryResult = await llmService.generateContent(systemPrompt, userPrompt);
+    const summaryResult = await llmService.generateFast(systemPrompt, userPrompt, "qwen-flash");
 
     res.json({ success: true, summary: summaryResult });
   } catch (error) {
     console.error("Get Summary Error:", error);
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const getRandomBites = async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'];
+    const limit = parseInt(req.query.limit || '5', 10);
+    
+    const { data: solvedResults, error: solvedError } = await supabase
+      .from('BiteResult')
+      .select('questionId')
+      .eq('userId', userId);
+      
+    if (solvedError && solvedError.code !== 'PGRST116') {
+      console.warn("Solved fetching error, proceeding anyway:", solvedError);
+    }
+    const solvedIds = new Set((solvedResults || []).map(r => String(r.questionId)));
+    
+    const { data: questions, error } = await supabase.from('BiteQuestion').select('*');
+    if (error) throw error;
+    
+    const unsolved = (questions || []).filter(q => !solvedIds.has(String(q.id)));
+    
+    // Fisher-Yates shuffle for true uniform randomness
+    for (let i = unsolved.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [unsolved[i], unsolved[j]] = [unsolved[j], unsolved[i]];
+    }
+    
+    const selected = unsolved.slice(0, limit);
+    
+    res.json({ success: true, data: selected });
+  } catch (err) {
+    console.error("Get Random Bites Error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 };

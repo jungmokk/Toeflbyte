@@ -78,6 +78,7 @@ const Login = ({ navigation }) => {
         options: {
           redirectTo: Linking.createURL('login-callback'),
           skipBrowserRedirect: true,
+          scopes: 'profile_nickname profile_image',
         },
       });
       if (error) throw error;
@@ -139,7 +140,7 @@ const Login = ({ navigation }) => {
       <View style={styles.inner}>
         <View style={styles.header}>
           <Image 
-            source={require('../../../assets/logo.png')} 
+            source={require('../../../assets/icon.png')} 
             style={styles.logoImage} 
             resizeMode="contain"
           />

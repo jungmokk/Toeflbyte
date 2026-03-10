@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateBite, saveResult, getSummary } from '../controllers/testController.js';
+import { generateBite, saveResult, getSummary, getRandomBites } from '../controllers/testController.js';
 import { chatTutor } from '../controllers/chatController.js';
 import { checkAndDeductCredits } from '../middleware/creditMiddleware.js';
 import { rechargeCredits, syncUser, upgradePremium, rewardCredits } from '../controllers/creditController.js';
@@ -26,6 +26,7 @@ router.post('/chat-tutor', checkAndDeductCredits(1), chatTutor);
 router.post('/ai/define-word', defineWord);
 router.post('/save-result', saveResult);
 router.post('/get-summary', getSummary);
+router.get('/random-bites', getRandomBites);
 
 export default router;
 

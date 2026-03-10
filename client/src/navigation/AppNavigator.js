@@ -11,6 +11,7 @@ import VocabularyNote from '../screens/Review/VocabularyNote';
 import Settings from '../screens/Settings/Settings';
 import Login from '../screens/Auth/Login';
 import Onboarding from '../screens/Home/Onboarding';
+import Store from '../screens/Store/Store';
 import { Home as HomeIcon, BookOpen, Settings as SettingsIcon } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import useStore from '../store/useStore';
@@ -86,6 +87,7 @@ const AppNavigator = () => {
             <Stack.Screen name="Chat" component={Chat} options={{ presentation: 'modal' }} />
             <Stack.Screen name="ReviewDetail" component={ReviewDetail} />
             <Stack.Screen name="VocabularyNote" component={VocabularyNote} />
+            <Stack.Screen name="Store" component={Store} options={{ presentation: 'modal' }} />
           </>
         )}
       </Stack.Navigator>

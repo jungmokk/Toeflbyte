@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Modal
+  Modal,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,7 +24,7 @@ import { API_URL } from '../../api/config';
 import AnimatedButton from '../../components/AnimatedButton';
 
 const Test = ({ navigation, route }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { generateBite, saveResult } = useBite();
   const { saveWord } = useVocab();
   const { currentBite, deductCredits, reused, addToHistory, setCurrentBite, timerEnabled, userId } = useStore();
@@ -36,6 +37,7 @@ const Test = ({ navigation, route }) => {
   const [wordLoading, setWordLoading] = useState(false);
   const [wordMeaning, setWordMeaning] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   // Timer States
   const [timeLeft, setTimeLeft] = useState(90);
@@ -48,6 +50,7 @@ const Test = ({ navigation, route }) => {
   // AdMob Setup
   const adRef = useRef(null);
   const [adLoaded, setAdLoaded] = useState(false);
+  const adTriggerSourceRef = useRef(null); // 'loading' | 'finish' | null
 
   useEffect(() => {
     const adUnitId = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID || TestIds.INTERSTITIAL;
@@ -61,12 +64,19 @@ const Test = ({ navigation, route }) => {
 
     const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
       setAdLoaded(false);
-      navigation.navigate('Home');
+      // 광고를 다시 로드하여 다음 번에 사용 가능하게 함
+      interstitial.load();
+      
+      if (adTriggerSourceRef.current === 'finish') {
+        navigation.navigate('Home');
+      }
+      adTriggerSourceRef.current = null;
     });
 
     const unsubscribeError = interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
       console.warn('AdMob Interstitial Error:', error);
       setAdLoaded(false);
+      adTriggerSourceRef.current = null;
     });
 
     interstitial.load();
@@ -77,10 +87,11 @@ const Test = ({ navigation, route }) => {
       unsubscribeClosed();
       unsubscribeError();
     };
-  }, []);
+  }, []); // Run only once
 
   const handleFinish = () => {
-    if (adLoaded) {
+    if (adLoaded && adRef.current) {
+      adTriggerSourceRef.current = 'finish';
       adRef.current.show();
     } else {
       navigation.navigate('Home');
@@ -153,27 +164,25 @@ const Test = ({ navigation, route }) => {
         return;
       }
 
-      // TOEFL 빈출 주제 리스트
-      const topics = [
-        'Archaeology of Ancient Egypt',
-        'Astronomy and Planetary Formation',
-        'Marine Biology and Coral Reefs',
-        'History of the Renaissance Art',
-        'Geology and Plate Tectonics',
-        'Sociology of Urbanization',
-        'Economics of the Great Depression',
-        'Environmental Science and Climate Change',
-        'Psychology of Cognitive Development',
-        'Early American Literature',
-        'Linguistics and Language Evolution',
-        'Microbiology of Extremophiles',
-        'Modern Architecture Movements'
-      ];
+      // 첫 로딩시에만 홈에서 넘어온 토픽 사용, 다음 문제 풀기 시에는 null로 리셋해서 랜덤 출제
+      let selectedTopic = null;
+      if (initialLoad) {
+         selectedTopic = route.params?.topic || null;
+         setInitialLoad(false);
+      }
       
-      // 토픽을 랜덤하게 섞거나, Home에서 넘어온 토픽이 없으면 무조건 랜덤
-      const selectedTopic = route.params?.topic || topics[Math.floor(Math.random() * topics.length)];
-      console.log(`[Load-Bite] Requesting new bite for topic: ${selectedTopic}`);
-      const res = await generateBite(selectedTopic);
+      console.log(`[Load-Bite] Requesting new bite for topic: ${selectedTopic || 'Any Random from DB'}`);
+      
+      // API 호출과 광고 노출을 병렬로 고려
+      const generatePromise = generateBite(selectedTopic);
+      
+      // 광고가 로드되어 있다면 보여주기
+      if (adLoaded && adRef.current) {
+        adTriggerSourceRef.current = 'loading';
+        adRef.current.show();
+      }
+
+      const res = await generatePromise;
       
       // Only deduct if it's NOT a reused question
       if (res && !res.reused) {
@@ -373,26 +382,39 @@ const Test = ({ navigation, route }) => {
         animationType="slide"
         onRequestClose={() => setSelectedWord(null)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.vocabDrawer}>
-            <View style={styles.drawerHandle} />
-            <View style={styles.drawerHeader}>
-              <View style={styles.wordTitleRow}>
-                <Zap color={COLORS.primary} fill={COLORS.primary} size={20} />
-                <Text style={styles.drawerWord}>{selectedWord}</Text>
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setSelectedWord(null)}
+        >
+          <TouchableWithoutFeedback>
+            <View style={styles.vocabDrawer}>
+              <View style={styles.drawerHandle} />
+              <View style={styles.drawerHeader}>
+                <View style={styles.wordTitleRow}>
+                  <Zap color={COLORS.primary} fill={COLORS.primary} size={20} />
+                  <Text style={styles.drawerWord}>{selectedWord}</Text>
+                </View>
+                <View style={{flexDirection: 'row', gap: 10}}>
+                  <TouchableOpacity 
+                    style={[styles.bookmarkButton, isSaved && {backgroundColor: 'rgba(16, 185, 129, 0.1)'}]} 
+                    onPress={handleSaveWordDetail}
+                    disabled={isSaved}
+                  >
+                    {isSaved ? (
+                      <CheckCircle color={COLORS.success} size={24} />
+                    ) : (
+                      <Bookmark color={COLORS.primary} size={24} />
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.bookmarkButton} 
+                    onPress={() => setSelectedWord(null)}
+                  >
+                    <X color={COLORS.text} size={24} />
+                  </TouchableOpacity>
+                </View>
               </View>
-              <TouchableOpacity 
-                style={[styles.bookmarkButton, isSaved && {backgroundColor: 'rgba(16, 185, 129, 0.1)'}]} 
-                onPress={handleSaveWordDetail}
-                disabled={isSaved}
-              >
-                {isSaved ? (
-                  <CheckCircle color={COLORS.success} size={24} />
-                ) : (
-                  <Bookmark color={COLORS.primary} size={24} />
-                )}
-              </TouchableOpacity>
-            </View>
 
             {wordLoading ? (
               <ActivityIndicator color={COLORS.primary} style={{marginVertical: 40}} />
@@ -411,7 +433,8 @@ const Test = ({ navigation, route }) => {
               </ScrollView>
             )}
           </View>
-        </View>
+        </TouchableWithoutFeedback>
+        </TouchableOpacity>
       </Modal>
 
       {selectedAnswer && (

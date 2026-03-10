@@ -42,9 +42,9 @@ import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-nat
 
 const adUnitId = process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID || TestIds.REWARDED;
 
-const Settings = () => {
+const Settings = ({ navigation }) => {
   const { credits, persona, setPersona, timerEnabled, setTimerEnabled, isPremium, isAdmin, resetStore } = useStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { rechargeCredits, upgradePremium, syncUser, claimReward } = useUser();
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -268,7 +268,7 @@ const Settings = () => {
           </View>
           <TouchableOpacity 
             style={styles.chargeButton}
-            onPress={() => setModalVisible(true)}
+            onPress={() => navigation.navigate('Store')}
           >
             <PlusCircle size={20} color="#FFFFFF" />
             <Text style={styles.chargeButtonText}>{t('settings.charge')}</Text>
@@ -279,7 +279,7 @@ const Settings = () => {
         {!isPremium && (
           <TouchableOpacity 
             style={styles.premiumBanner}
-            onPress={handleUpgrade}
+            onPress={() => navigation.navigate('Store')}
             disabled={loading}
           >
             <View style={styles.premiumBannerLeft}>
