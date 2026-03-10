@@ -27,3 +27,9 @@ client/dist/
 # Build artifacts
 build/
 dist/
+client/build-*
+*.apk
+*.aab
+*.ipa
+google-services.json
+test_qwen_cjs.js

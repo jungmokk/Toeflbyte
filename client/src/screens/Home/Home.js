@@ -35,16 +35,30 @@ const Home = ({ navigation }) => {
       return { accuracy: 0, wpm: 0, streak: 0 };
     }
 
-    const totalAccuracy = history.reduce((acc, curr) => acc + (curr.accuracy || 0), 0);
-    const avgAccuracy = Math.round(totalAccuracy / history.length);
+    const correctAnswers = history.filter(curr => curr.isCorrect).length;
+    const avgAccuracy = Math.round((correctAnswers / history.length) * 100);
     
-    // For WPM, we can take the average of recent tests
-    const totalWpm = history.reduce((acc, curr) => acc + (curr.wpm || 0), 0);
-    const avgWpm = Math.round(totalWpm / history.length);
+    // Calculate WPM
+    let totalWpm = 0;
+    let wpmCount = 0;
+
+    history.forEach((curr) => {
+      if (curr.timeSpent && curr.timeSpent > 0 && curr.question && curr.question.content_json) {
+         try {
+            const content = typeof curr.question.content_json === 'string' ? JSON.parse(curr.question.content_json) : curr.question.content_json;
+            const wordCount = content.passage ? content.passage.split(/\\s+/).length : 200;
+            const itemWpm = (wordCount / curr.timeSpent) * 60;
+            totalWpm += itemWpm;
+            wpmCount++;
+         } catch(e) {}
+      }
+    });
+
+    const avgWpm = wpmCount > 0 ? Math.round(totalWpm / wpmCount) : 0;
 
     // Simplistic streak calculation: count unique days in history
     const uniqueDays = new Set(history.map(item => {
-      const date = new Date(item.timestamp);
+      const date = new Date(item.solvedAt || item.timestamp || Date.now());
       return date.toDateString();
     })).size;
 
@@ -136,7 +150,7 @@ const Home = ({ navigation }) => {
 
         <AnimatedButton 
           style={styles.premiumSectionCard}
-          onPress={() => navigation.navigate('Test', { topic: '2026 Hot Trends in Science and Society' })}
+          onPress={() => navigation.navigate('Test', { topic: 'PREMIUM_2026' })}
         >
           <View style={styles.premiumIconContainer}>
             <Flame color="#FF4D4D" size={28} />

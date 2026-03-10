@@ -88,6 +88,15 @@ export const generateBite = async (req, res) => {
     const langNames = { ko: "Korean", ja: "Japanese", "zh-TW": "Traditional Chinese (Taiwan)" };
     const targetLang = langNames[language] || "Korean";
 
+    // Dynamic context overriding for PREMIUM_PREDICT
+    let actualTopic = topic;
+    let premiumContextPrompt = "";
+    if (topic === 'PREMIUM_2026') {
+      const currentYear = new Date().getFullYear();
+      actualTopic = "2026 Hot Trends in Science and Society";
+      premiumContextPrompt = `CRITICAL: You MUST base this question strictly on cutting-edge topics highly likely to appear in the ${currentYear} TOEFL reading section (e.g., advanced AI ethics, novel renewable energy technologies, modern sociological shifts, or latest space discoveries). Make it challenging and sophisticated.`;
+    }
+
     const systemPrompt = `
 ${masterPrompt}
 
@@ -101,9 +110,10 @@ ${lengthGuideline}
 ### CRITICAL GENERATION GUIDELINES:
 1. JSON Output: You MUST output the response in EXACT JSON format.
 2. Language: The passage, question, and options MUST be in English. However, the 'explanation' field MUST be written in ${targetLang}.
+${premiumContextPrompt}
 `;
 
-    const userPrompt = `주제 '${topic}'에 기반하여 ${type === 'SHORT' ? '1분 숏 바이트(요약형)' : '표준 숏폼'} 토플 문제 1세트를 생성해 줘. 해설(explanation)은 반드시 ${targetLang}(으)로 작성해야 해.`;
+    const userPrompt = `주제 '${actualTopic}'에 기반하여 ${type === 'SHORT' ? '1분 숏 바이트(요약형)' : '표준 숏폼'} 토플 문제 1세트를 생성해 줘. 해설(explanation)은 반드시 ${targetLang}(으)로 작성해야 해.`;
 
     const result = await llmService.generateFast(systemPrompt, userPrompt, "qwen-plus");
 

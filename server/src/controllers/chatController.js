@@ -49,6 +49,9 @@ The student is asking about the following question/passage: ${JSON.stringify(que
 If question_context contains { isTimeout: true }, you MUST tell the student that their reading speed is too slow. 
 "${targetStyle.timeout}" 와 같은 스타일로 팩폭해주세요.
 You must explain the answer and why other options are traps. ${targetStyle.explain}
+
+### FORMATTING CONSTRAINT:
+DO NOT use markdown bold formatting (**) excessively. Avoid surrounding words or phrases with "**" to simply highlight them. Your tone should naturally convey emphasis without relying on excessive Markdown asterisks.
 `;
 
     // 3. LLM 호출 (History 포함)
