@@ -71,54 +71,7 @@ const Login = ({ navigation }) => {
     }
   }
 
-  async function signInWithKakao() {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'kakao',
-        options: {
-          redirectTo: Linking.createURL('login-callback'),
-          skipBrowserRedirect: true,
-          scopes: 'profile_nickname profile_image',
-        },
-      });
-      if (error) throw error;
 
-      if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(data.url, Linking.createURL('login-callback'));
-
-        if (result.type === 'success' && result.url) {
-          // # 뒤의 fragment 파싱 (Kakao/OAuth2 standard)
-          let params = {};
-          const splitUrl = result.url.split('#');
-          if (splitUrl.length > 1) {
-            const hash = splitUrl[1];
-            params = hash.split('&').reduce((acc, item) => {
-              const [key, value] = item.split('=');
-              acc[key] = value;
-              return acc;
-            }, {});
-          }
-
-          // query parameter 가 있는 경우도 고려
-          const { queryParams } = Linking.parse(result.url);
-          params = { ...params, ...queryParams };
-
-          console.log('Parsed Kakao params:', params);
-
-          if (params.access_token && params.refresh_token) {
-            const { error } = await supabase.auth.setSession({
-              access_token: params.access_token,
-              refresh_token: params.refresh_token,
-            });
-            if (error) throw error;
-            console.log('Kakao session established');
-          }
-        }
-      }
-    } catch (error) {
-      Alert.alert(t('login.kakao_error'), error.message);
-    }
-  }
 
   async function signInWithEmail() {
     setLoading(true);
@@ -173,15 +126,6 @@ const Login = ({ navigation }) => {
                 <Text style={styles.googleButtonText}>{t('login.google_continue')}</Text>
               </>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.kakaoButton} onPress={signInWithKakao}>
-            <View style={styles.kakaoContent}>
-              <View style={styles.kakaoSymbol}>
-                <Text style={styles.kakaoSymbolText}>K</Text>
-              </View>
-              <Text style={styles.kakaoButtonText}>{t('login.kakao_continue')}</Text>
-            </View>
           </TouchableOpacity>
         </View>
 

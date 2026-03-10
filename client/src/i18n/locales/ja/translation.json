@@ -132,12 +132,10 @@
     "start_signup": "会員登録を始める",
     "or": "または",
     "google_continue": "Googleで続ける",
-    "kakao_continue": "KakaoTalkでログイン",
     "not_member_yet": "まだ会員ではありませんか？ ",
     "already_have_account": "すでにアカウントをお持ちですか？ ",
     "error_title": "ログインエラー",
     "no_google_token": "Google IDトークンがありません。クライアント設定を確認してください。",
-    "kakao_error": "Kakaoログインエラー",
     "fail_title": "ログイン失敗",
     "signup_fail_title": "会員登録失敗",
     "verify_email_sent": "確認メールを送信しました。"

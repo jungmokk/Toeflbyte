@@ -132,12 +132,10 @@
     "start_signup": "開始註冊",
     "or": "或",
     "google_continue": "使用 Google 帳號登入",
-    "kakao_continue": "使用 KakaoTalk 登入",
     "not_member_yet": "還不是會員嗎？ ",
     "already_have_account": "已經有帳號了嗎？ ",
     "error_title": "登入錯誤",
     "no_google_token": "缺少 Google ID Token。請檢查客戶端設定。",
-    "kakao_error": "Kakao 登入錯誤",
     "fail_title": "登入失敗",
     "signup_fail_title": "註冊失敗",
     "verify_email_sent": "已傳送驗證郵件。"

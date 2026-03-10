@@ -31,5 +31,5 @@ client/build-*
 *.apk
 *.aab
 *.ipa
-google-services.json
-test_qwen_cjs.js
+# google-services.json
+# test_qwen_cjs.js
