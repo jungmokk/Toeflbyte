@@ -13,9 +13,10 @@
 
 const RENDER_URL = 'https://toeflbyte.onrender.com/health';
 const SUPABASE_URL = 'https://fpvtolzqnmbckfjvsnsy.supabase.co/rest/v1/';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwdnRvbHpxbm1iY2tmanZzbnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NjY5MDYsImV4cCI6MjA4ODQ0MjkwNn0.AIvrrz04skBmO8hVUf2cnDOIZNLYOgpReSTuWrK5hfw';
 const INTERVAL_MS = 10 * 60 * 1000; // 10분
 
-async function pingUrl(name, url, timeoutMs = 45000) {
+async function pingUrl(name, url, headers = {}, timeoutMs = 45000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   const start = Date.now();
@@ -26,6 +27,7 @@ async function pingUrl(name, url, timeoutMs = 45000) {
       signal: controller.signal,
       headers: {
         'User-Agent': 'ToeflByte-KeepAlive/1.0',
+        ...headers,
       },
     });
     clearTimeout(timeoutId);
@@ -46,7 +48,10 @@ async function runPingCycle() {
   console.log(`========================================`);
 
   await pingUrl('Render 백엔드 서버', RENDER_URL);
-  await pingUrl('Supabase 서버', SUPABASE_URL);
+  await pingUrl('Supabase 서버', SUPABASE_URL, {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+  });
 }
 
 const isOnce = process.argv.includes('--once');

@@ -24,5 +24,7 @@ jobs:
       - name: Ping Supabase Project
         run: |
           echo "Pinging Supabase..."
-          SUPABASE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://fpvtolzqnmbckfjvsnsy.supabase.co/rest/v1/ || echo "000")
+          SUPABASE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwdnRvbHpxbm1iY2tmanZzbnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NjY5MDYsImV4cCI6MjA4ODQ0MjkwNn0.AIvrrz04skBmO8hVUf2cnDOIZNLYOgpReSTuWrK5hfw" \
+            https://fpvtolzqnmbckfjvsnsy.supabase.co/rest/v1/ || echo "000")
           echo "Supabase Status: $SUPABASE_STATUS"
