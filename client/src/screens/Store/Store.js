@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,22 +6,155 @@ import {
   TouchableOpacity, 
   ScrollView, 
   ActivityIndicator,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING } from '../../constants/theme';
-import { X, Zap, Crown, Award, Check } from 'lucide-react-native';
+import { X, Zap, Crown, Award, Check, Sparkles } from 'lucide-react-native';
 import useStore from '../../store/useStore';
 import useUser from '../../hooks/useUser';
 import AnimatedButton from '../../components/AnimatedButton';
 import { useTranslation } from 'react-i18next';
+import { 
+  useIAP,
+  PurchaseError,
+  ErrorCode
+} from 'react-native-iap';
+
+const SKUS = Platform.select({
+  android: ['pack_basic', 'pack_pro', 'pack_master'],
+  ios: ['pack_basic', 'pack_pro', 'pack_master'],
+});
+
+const SUBS = Platform.select({
+  android: ['premium_monthly', 'premium_yearly'],
+  ios: ['premium_monthly', 'premium_yearly'],
+});
 
 const Store = ({ navigation }) => {
-  const { credits } = useStore();
-  const { rechargeCredits } = useUser();
+  const { credits, isPremium } = useStore();
+  const { rechargeCredits, upgradePremium, syncUser } = useUser();
   const { t } = useTranslation();
+  const {
+    connected,
+    products,
+    subscriptions,
+    fetchProducts,
+    getSubscriptions,
+    finishTransaction,
+    requestPurchase,
+    requestSubscription,
+    getAvailablePurchases,
+  } = useIAP({
+    onPurchaseSuccess: async (purchase) => {
+      try {
+        const receipt = purchase.transactionReceipt;
+        if (receipt) {
+          setLoadingCode(purchase.productId);
+          let result;
+          const isSub = SUBS.includes(purchase.productId);
+          
+          if (isSub) {
+            result = await upgradePremium(purchase.productId, receipt);
+          } else {
+            const pkg = packages.find(p => p.id === purchase.productId);
+            result = await rechargeCredits(pkg ? pkg.credits + pkg.bonus : 0, purchase.productId, receipt);
+          }
+
+          if (result && result.success) {
+            await finishTransaction({ purchase });
+            Alert.alert(t('common.success'), t('store.purchaseSuccess'));
+            await syncUser();
+          }
+        }
+      } catch (err) {
+        console.error('[Purchase-Verify-Error]', err);
+        Alert.alert(t('common.error'), t('store.verifyFailed'));
+      } finally {
+        setLoadingCode(null);
+      }
+    },
+    onPurchaseError: (error) => {
+      setLoadingCode(null);
+      // v14에서는 instanceof PurchaseError 대신 직접 property 체크를 권장합니다.
+      if (error && error.code) {
+        if (error.code !== 'E_USER_CANCELLED') {
+          console.warn('[Purchase-Error]', error);
+          Alert.alert(t('common.error'), error.message || t('store.purchaseError'));
+        }
+      } else if (error) {
+        console.error('[Unknown-Purchase-Error]', error);
+        Alert.alert(t('common.error'), error.message || "An unknown error occurred.");
+      }
+    }
+  });
   
   const [loadingCode, setLoadingCode] = useState(null);
+
+  // Initialize and fetch products
+  useEffect(() => {
+    let isMounted = true;
+
+    const initIAP = async () => {
+      try {
+        if (connected) {
+          console.log('[Store] IAP Connected. Fetching products...');
+          // Fetch products and subscriptions using specialized methods for v14+
+          await Promise.all([
+            fetchProducts({ skus: SKUS }),
+            getSubscriptions({ skus: SUBS })
+          ]);
+          console.log('[Store] Items loaded successfully.');
+        } else {
+          console.log('[Store] IAP not connected yet.');
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('[IAP-Init-Error]', err);
+        }
+      }
+    };
+    initIAP();
+
+    return () => { isMounted = false; };
+  }, [connected]);
+
+  const handleRestore = async () => {
+    try {
+      setLoadingCode('restore');
+      const available = await getAvailablePurchases();
+      if (available && available.length > 0) {
+        // Sync the latest purchase (simplification for MVP)
+        const lastPurchase = available[available.length - 1];
+        const receipt = lastPurchase.transactionReceipt;
+        if (receipt) {
+          const isSub = SUBS.includes(lastPurchase.productId);
+          let result;
+          if (isSub) {
+            result = await upgradePremium(lastPurchase.productId, receipt);
+          } else {
+            const pkg = packages.find(p => p.id === lastPurchase.productId);
+            result = await rechargeCredits(pkg ? pkg.credits + pkg.bonus : 0, lastPurchase.productId, receipt);
+          }
+          
+          if (result && result.success) {
+            Alert.alert(t('common.success'), t('store.restore_success') || "Purchases restored successfully!");
+            await syncUser();
+          }
+        }
+      } else {
+        Alert.alert(t('store.restore_title') || "Restore Purchases", t('store.no_purchases') || "No previous purchases found.");
+      }
+    } catch (err) {
+      console.error('[Restore-Error]', err);
+      Alert.alert(t('common.error'), t('store.restore_failed') || "Failed to restore purchases.");
+    } finally {
+      setLoadingCode(null);
+    }
+  };
+
+
 
   const packages = [
     {
@@ -55,27 +188,103 @@ const Store = ({ navigation }) => {
     }
   ];
 
-  const handlePurchase = async (pkg) => {
-    setLoadingCode(pkg.id);
-    // Simulate real IAP delay for production feel
-    setTimeout(async () => {
-      try {
-        const result = await rechargeCredits(pkg.credits + pkg.bonus);
-        if (result && result.success) {
-          Alert.alert(
-            "결제 승인",
-            `${pkg.credits + pkg.bonus} 크레딧 충전이 완료되었습니다.`,
-            [{ text: "확인" }]
-          );
+  const subPackages = [
+    {
+      id: 'premium_monthly',
+      title: 'Monthly Pass',
+      price: '$9.99/mo',
+      description: 'Full access + 500 bonus credits',
+      icon: <Sparkles color={COLORS.primary} size={28} />
+    },
+    {
+      id: 'premium_yearly',
+      title: 'Yearly Pass',
+      price: '$79.99/yr',
+      description: 'Save 30% + 2000 bonus credits',
+      icon: <Crown color="#FFD700" size={28} />,
+      popular: true
+    }
+  ];
+
+  const handlePurchaseRequest = async (sku, isSub = false) => {
+    if (!connected) {
+      Alert.alert(t('common.error'), t('store.notConnected') || "Store not connected. Please try again.");
+      return;
+    }
+    
+    setLoadingCode(sku);
+    try {
+      if (isSub) {
+        console.log(`[IAP] Requesting subscription for: ${sku}`);
+        const sub = subscriptions.find(s => s.productId === sku);
+        
+        if (Platform.OS === 'android') {
+          // v14+ sub object contains subscriptionOfferDetails for each base plan/offer
+          const subDetails = sub?.subscriptionOfferDetails || [];
+
+          if (!sub || subDetails.length === 0) {
+            console.error('[IAP] No offer details found for sub SKU:', sku, JSON.stringify(sub, null, 2));
+            throw new Error(`[${sku}] Subscription offer details not found. Please ensure a Base Plan is ACTIVE in Google Play Console.`);
+          }
+          
+          // Find the best offer (usually the one with the least discount or just the first one)
+          // For most cases, the first one is the default base plan
+          const offerToken = subDetails[0].offerToken;
+
+          if (!offerToken) {
+            console.error('[IAP] Offer token is missing for sub SKU:', sku, JSON.stringify(sub, null, 2));
+            throw new Error('Subscription offer token not found.');
+          }
+
+          console.log(`[IAP] Requesting subscription for ${sku} with token: ${offerToken.substring(0, 20)}...`);
+          
+          await requestSubscription({
+            sku,
+            subscriptionOffers: [{ sku, offerToken }],
+          });
         } else {
-          Alert.alert("결제 실패", "처리 중 오류가 발생했습니다.");
+          // iOS v14 pattern
+          await requestSubscription({
+            request: {
+              ios: {
+                sku,
+                andDangerouslyFinishTransactionAutomatically: false
+              }
+            }
+          });
         }
-      } catch (err) {
-        Alert.alert("결제 오류", "다시 시도해 주세요.");
-      } finally {
-        setLoadingCode(null);
+      } else {
+        console.log(`[IAP] Requesting purchase for: ${sku}`);
+        if (Platform.OS === 'android') {
+          await requestPurchase({
+            request: {
+              android: {
+                skus: [sku]
+              }
+            }
+          });
+        } else {
+          await requestPurchase({
+            request: {
+              ios: {
+                sku,
+                andDangerouslyFinishTransactionAutomaticallyIOS: false
+              }
+            }
+          });
+        }
       }
-    }, 1500);
+    } catch (err) {
+      setLoadingCode(null);
+      console.error('[Purchase-Request-Error]', err);
+      const msg = err instanceof Error ? err.message : "Purchase request failed.";
+      Alert.alert(t('common.error'), msg);
+    }
+  };
+
+  const getPriceBySku = (sku, fallback) => {
+    const item = [...products, ...subscriptions].find(p => p.productId === sku);
+    return item ? item.localizedPrice : fallback;
   };
 
   return (
@@ -84,7 +293,7 @@ const Store = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn}>
           <X color={COLORS.text} size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>스토어</Text>
+        <Text style={styles.headerTitle}>{t('store.title')}</Text>
         <View style={styles.balanceBadge}>
           <Zap color="#FFD700" size={14} fill="#FFD700" />
           <Text style={styles.balanceText}>{credits}</Text>
@@ -96,26 +305,57 @@ const Store = ({ navigation }) => {
           <View style={styles.heroIconContainer}>
             <Zap color={COLORS.primary} size={48} fill={COLORS.primary} />
           </View>
-          <Text style={styles.heroTitle}>프리미엄 학습 시작하기</Text>
-          <Text style={styles.heroSubtitle}>더 많은 문제를 풀고 실력을 빠르게 올리세요!</Text>
+          <Text style={styles.heroTitle}>{t('store.hero_title')}</Text>
+          <Text style={styles.heroSubtitle}>{t('store.hero_subtitle')}</Text>
           
           <View style={styles.featureList}>
             <View style={styles.featureItem}>
               <Check color={COLORS.success} size={16} />
-              <Text style={styles.featureText}>프리미엄 랜덤 기출문제 해제</Text>
+              <Text style={styles.featureText}>{t('store.feature_db')}</Text>
             </View>
             <View style={styles.featureItem}>
               <Check color={COLORS.success} size={16} />
-              <Text style={styles.featureText}>일타강사 AI 1:1 심층 피드백</Text>
+              <Text style={styles.featureText}>{t('store.feature_ai')}</Text>
             </View>
             <View style={styles.featureItem}>
               <Check color={COLORS.success} size={16} />
-              <Text style={styles.featureText}>나만의 오답 노트 생성</Text>
+              <Text style={styles.featureText}>{t('store.feature_note')}</Text>
             </View>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>크레딧 충전</Text>
+        {/* Subscriptions Section */}
+        <Text style={styles.sectionTitle}>{t('store.pass_section')}</Text>
+        <View style={styles.subList}>
+          {subPackages.map((sub) => (
+            <AnimatedButton 
+              key={sub.id}
+              style={[styles.subCard, sub.popular && styles.popularCard]}
+              onPress={() => handlePurchaseRequest(sub.id, true)}
+              disabled={loadingCode !== null || isPremium}
+            >
+              <View style={styles.subIconWrap}>{sub.icon}</View>
+              <View style={styles.packageInfo}>
+                <Text style={styles.packageTitle}>{sub.title}</Text>
+                <Text style={styles.subPrice}>{getPriceBySku(sub.id, sub.price)}</Text>
+                <Text style={styles.subDesc}>{sub.description}</Text>
+              </View>
+              {isPremium ? (
+                <View style={styles.activeLabel}><Text style={styles.activeText}>{t('store.using')}</Text></View>
+              ) : (
+                <View style={styles.priceBtn}>
+                  {loadingCode === sub.id ? (
+                    <ActivityIndicator color={COLORS.white} size="small" />
+                  ) : (
+                    <Text style={styles.priceBtnText}>{t('store.subscribe')}</Text>
+                  )}
+                </View>
+              )}
+            </AnimatedButton>
+          ))}
+        </View>
+
+        <Text style={styles.sectionTitle}>{t('store.credit_section')}</Text>
         <View style={styles.packageList}>
           {packages.map((pkg) => (
             <AnimatedButton 
@@ -125,7 +365,7 @@ const Store = ({ navigation }) => {
                 pkg.popular && styles.popularCard,
                 pkg.bestValue && styles.bestValueCard
               ]}
-              onPress={() => handlePurchase(pkg)}
+              onPress={() => handlePurchaseRequest(pkg.id)}
               disabled={loadingCode !== null}
             >
               {pkg.popular && (
@@ -150,7 +390,7 @@ const Store = ({ navigation }) => {
                   <Zap color="#FFD700" size={16} fill="#FFD700" style={{ marginLeft: 4 }} />
                 </View>
                 {pkg.bonus > 0 && (
-                  <Text style={styles.bonusText}>+ {pkg.bonus} 보너스 크레딧</Text>
+                  <Text style={styles.bonusText}>{t('store.bonus_credits', { amount: pkg.bonus })}</Text>
                 )}
               </View>
 
@@ -158,7 +398,7 @@ const Store = ({ navigation }) => {
                 {loadingCode === pkg.id ? (
                   <ActivityIndicator color={COLORS.white} size="small" />
                 ) : (
-                  <Text style={styles.priceBtnText}>{pkg.price}</Text>
+                  <Text style={styles.priceBtnText}>{getPriceBySku(pkg.id, pkg.price)}</Text>
                 )}
               </View>
             </AnimatedButton>
@@ -166,8 +406,18 @@ const Store = ({ navigation }) => {
         </View>
         
         <View style={styles.footerInfo}>
-          <Text style={styles.footerText}>✅ 결제는 안전하게 처리되며 앱스토어 영수증으로 발행됩니다.</Text>
-          <Text style={styles.footerText}>✅ 크레딧 내역은 설정 화면에서 언제든 초기화하거나 확인할 수 있습니다.</Text>
+          <Text style={styles.footerText}>{t('store.footer_safe')}</Text>
+          <Text style={styles.footerText}>{t('store.footer_check')}</Text>
+          
+          <TouchableOpacity 
+            style={styles.restoreLink} 
+            onPress={handleRestore}
+            disabled={loadingCode !== null}
+          >
+            <Text style={styles.restoreLinkText}>
+              {loadingCode === 'restore' ? t('common.loading') : t('store.restore_title') || "Restore Purchases"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -218,26 +468,22 @@ const styles = StyleSheet.create({
   heroSection: {
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
-    paddingVertical: 30,
+    paddingVertical: 20,
   },
   heroIconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: 'rgba(41, 121, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: 'rgba(41, 121, 255, 0.3)',
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
   },
   heroTitle: {
     color: COLORS.white,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
     marginBottom: 8,
     textAlign: 'center',
@@ -246,14 +492,14 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   featureList: {
     alignSelf: 'stretch',
     backgroundColor: COLORS.surfaceGlass,
     padding: SPACING.lg,
     borderRadius: 20,
-    gap: 12,
+    gap: 10,
   },
   featureItem: {
     flexDirection: 'row',
@@ -270,7 +516,53 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: SPACING.lg,
+    marginTop: 24,
     marginBottom: SPACING.md,
+  },
+  subList: {
+    paddingHorizontal: SPACING.lg,
+    gap: 12,
+  },
+  subCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  subIconWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  subPrice: {
+    color: COLORS.white,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  subDesc: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  activeLabel: {
+    backgroundColor: 'rgba(0, 230, 118, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.success,
+  },
+  activeText: {
+    color: COLORS.success,
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   packageList: {
     paddingHorizontal: SPACING.lg,
@@ -303,16 +595,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     zIndex: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
   },
   badgeText: {
     color: '#000',
     fontSize: 10,
     fontWeight: '900',
-    letterSpacing: 0.5,
   },
   packageIconWrap: {
     width: 60,
@@ -370,6 +657,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'center',
+  },
+  restoreLink: {
+    marginTop: 16,
+    padding: 10,
+  },
+  restoreLinkText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   }
 });
 

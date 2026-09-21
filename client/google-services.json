@@ -12,7 +12,28 @@
           "package_name": "com.toeflbyte.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "743882997184-bnpf9cr6vdrdphen2m670hautq3p4fpi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.toeflbyte.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "743882997184-v62pnqa3mvjd4rlurhd43u4ot8qlie6s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.toeflbyte.app",
+            "certificate_hash": "f77fada6ef7f456d0f4d59e76d23d8a597b115a3"
+          }
+        },
+        {
+          "client_id": "743882997184-g2tbbb59vfkr4mle6ulsjj76g8dkj9dj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAmJ35SN_lexMBOYZCZGr-Qzktdag-ig2M"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "743882997184-g2tbbb59vfkr4mle6ulsjj76g8dkj9dj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

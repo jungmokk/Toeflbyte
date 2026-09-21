@@ -4,10 +4,17 @@ import supabase from '../config/db.js';
  * Middleware to check and deduct credits
  * @param {number} amount - Credits to deduct
  */
-export const checkAndDeductCredits = (amount) => {
+export const checkAndDeductCredits = (defaultAmount) => {
   return async (req, res, next) => {
     try {
       const userId = req.headers['x-user-id'];
+      
+      // Dynamic credit amount based on mode
+      let amount = defaultAmount;
+      if (req.body && req.body.mode) {
+        if (req.body.mode === 'ai') amount = 5;
+        else if (req.body.mode === 'db') amount = 2;
+      }
 
       if (!userId) {
         return res.status(401).json({ success: false, message: 'User ID is required in headers (x-user-id)' });

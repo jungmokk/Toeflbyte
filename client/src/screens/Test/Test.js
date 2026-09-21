@@ -18,7 +18,7 @@ import { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile
 import useBite from '../../hooks/useBite';
 import useVocab from '../../hooks/useVocab';
 import useStore from '../../store/useStore';
-import { X, Trophy, MessageCircle, Timer as TimerIcon, Eye, EyeOff, Bookmark, Zap, CheckCircle } from 'lucide-react-native';
+import { X, Trophy, MessageCircle, Timer as TimerIcon, Eye, EyeOff, Bookmark, Zap, CheckCircle, Sparkles } from 'lucide-react-native';
 import axios from 'axios';
 import { API_URL } from '../../api/config';
 import AnimatedButton from '../../components/AnimatedButton';
@@ -27,7 +27,11 @@ const Test = ({ navigation, route }) => {
   const { t, i18n } = useTranslation();
   const { generateBite, saveResult } = useBite();
   const { saveWord } = useVocab();
-  const { currentBite, deductCredits, reused, addToHistory, setCurrentBite, timerEnabled, userId } = useStore();
+  const { 
+    currentBite, deductCredits, reused, addToHistory, setCurrentBite, 
+    timerEnabled, userId, preFetchedBite, setPreFetchedBite, setReused,
+    vocabCache, setVocabCache 
+  } = useStore();
   
   const [loading, setLoading] = useState(true);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -50,51 +54,84 @@ const Test = ({ navigation, route }) => {
   // AdMob Setup
   const adRef = useRef(null);
   const [adLoaded, setAdLoaded] = useState(false);
+  const finishAdRef = useRef(null);
+  const [finishAdLoaded, setFinishAdLoaded] = useState(false);
   const adTriggerSourceRef = useRef(null); // 'loading' | 'finish' | null
 
   useEffect(() => {
-    const adUnitId = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID || TestIds.INTERSTITIAL;
-    const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
+    // 1. Loading Interstitial Ad (Used when pre-fetching/loading new bite)
+    const adUnitId = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID || 'ca-app-pub-5136549253813943/5108946007';
+    const loadingInterstitial = InterstitialAd.createForAdRequest(adUnitId, {
       requestNonPersonalizedAdsOnly: true,
     });
 
-    const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
-      setAdLoaded(true);
+    // 2. Finish Interstitial Ad (Used when user clicks Finish)
+    const finishAdUnitId = process.env.EXPO_PUBLIC_ADMOB_TEST_FINISH_ID || 'ca-app-pub-5136549253813943/5108946007';
+    const finishInterstitial = InterstitialAd.createForAdRequest(finishAdUnitId, {
+      requestNonPersonalizedAdsOnly: true,
     });
 
-    const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+    // Loading Ad Listeners
+    const unsubscribeLoaded = loadingInterstitial.addAdEventListener(AdEventType.LOADED, () => {
+      setAdLoaded(true);
+    });
+    const unsubscribeClosed = loadingInterstitial.addAdEventListener(AdEventType.CLOSED, () => {
       setAdLoaded(false);
-      // 광고를 다시 로드하여 다음 번에 사용 가능하게 함
-      interstitial.load();
-      
+      loadingInterstitial.load();
+      adTriggerSourceRef.current = null;
+    });
+    const unsubscribeError = loadingInterstitial.addAdEventListener(AdEventType.ERROR, (error) => {
+      console.warn('AdMob Loading Interstitial Error:', error);
+      setAdLoaded(false);
+      adTriggerSourceRef.current = null;
+    });
+
+    // Finish Ad Listeners
+    const unsubscribeFinishLoaded = finishInterstitial.addAdEventListener(AdEventType.LOADED, () => {
+      setFinishAdLoaded(true);
+    });
+    const unsubscribeFinishClosed = finishInterstitial.addAdEventListener(AdEventType.CLOSED, () => {
+      setFinishAdLoaded(false);
+      finishInterstitial.load();
       if (adTriggerSourceRef.current === 'finish') {
-        navigation.navigate('Home');
+        navigation.navigate('Main');
       }
       adTriggerSourceRef.current = null;
     });
-
-    const unsubscribeError = interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
-      console.warn('AdMob Interstitial Error:', error);
-      setAdLoaded(false);
+    const unsubscribeFinishError = finishInterstitial.addAdEventListener(AdEventType.ERROR, (error) => {
+      console.warn('AdMob Finish Interstitial Error:', error);
+      setFinishAdLoaded(false);
       adTriggerSourceRef.current = null;
     });
 
-    interstitial.load();
-    adRef.current = interstitial;
+    loadingInterstitial.load();
+    finishInterstitial.load();
+    
+    adRef.current = loadingInterstitial;
+    finishAdRef.current = finishInterstitial;
 
     return () => {
       unsubscribeLoaded();
       unsubscribeClosed();
       unsubscribeError();
+      unsubscribeFinishLoaded();
+      unsubscribeFinishClosed();
+      unsubscribeFinishError();
     };
   }, []); // Run only once
 
-  const handleFinish = () => {
-    if (adLoaded && adRef.current) {
-      adTriggerSourceRef.current = 'finish';
-      adRef.current.show();
-    } else {
-      navigation.navigate('Home');
+  const handleFinish = async () => {
+    try {
+      console.log('[Stop-Learning] Finish button pressed. FinishAdLoaded:', finishAdLoaded);
+      if (finishAdLoaded && finishAdRef.current) {
+        adTriggerSourceRef.current = 'finish';
+        await finishAdRef.current.show();
+      } else {
+        navigation.navigate('Main');
+      }
+    } catch (err) {
+      console.error('[Stop-Learning-Error]', err);
+      navigation.navigate('Main');
     }
   };
 
@@ -115,7 +152,7 @@ const Test = ({ navigation, route }) => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timerEnabled, reviewMode, loading, currentBite]);
+  }, [timerEnabled, reviewMode, loading, currentBite, selectedAnswer]);
 
   // 2. Flashing color & animation at 10s
   useEffect(() => {
@@ -148,45 +185,163 @@ const Test = ({ navigation, route }) => {
         ...parsedBite,
       });
       setLoading(false);
+    } else if (route.params?.preFetchedBite || preFetchedBite) {
+      // PRE-FETCHED CASE: Check route params first, then Zustand store
+      const res = route.params?.preFetchedBite || preFetchedBite;
+      console.log('[Load-Bite] Using pre-fetched bite for instant start (source:', route.params?.preFetchedBite ? 'params' : 'store', ')');
+      
+      // Update store states that generateBite would normally handle
+      setReused(res.reused || false);
+      const biteData = res.data;
+      setCurrentBite({ ...biteData, id: biteData.id });
+      
+      // Deduct credits as the test is now actually starting
+      if (res.credits_used) {
+        deductCredits(res.credits_used);
+      } else if (!res.reused) {
+        // Fallback for older server versions or unexpected response
+        const mode = route.params?.mode || 'db';
+        const amount = mode === 'ai' ? 5 : 2;
+        deductCredits(amount);
+      }
+      
+      // Clear store pre-fetch so it's not re-used
+      if (preFetchedBite) setPreFetchedBite(null);
+      
+      setLoading(false);
+      setInitialLoad(false);
     } else {
       loadNewBite();
     }
   }, [reviewMode, reviewBite]);
+  
+  // 3. Proactive Background Word Caching
+  useEffect(() => {
+    if (!currentBite || !currentBite.keyWords) return;
+    
+    const prefetchWords = async () => {
+      console.log(`[Pre-fetch-Vocab] Silently caching ${currentBite.keyWords.length} keyWords...`);
+      
+      // Filter out words already in cache
+      const wordsToFetch = (currentBite.keyWords || []).filter(
+        word => typeof word === 'string' && !vocabCache[word.toLowerCase()]
+      );
+
+      // Fetch definition with a small delay between each to avoid network congestion
+      for (const word of wordsToFetch) {
+        try {
+          if (typeof word !== 'string') continue;
+          
+          // Wait 500ms between each background request to stay lean
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim().toLowerCase();
+          const response = await axios.post(`${API_URL}/ai/define-word`, { 
+            word: cleanWord,
+            context: currentBite.passage,
+            language: i18n.language
+          });
+          if (response.data) {
+            setVocabCache(cleanWord, response.data);
+          }
+        } catch (e) {
+          // Silent fail for background tasks
+        }
+      }
+    };
+
+    prefetchWords();
+  }, [currentBite?.id]);
+
+
+
+  /**
+   * Background Pre-fetching Strategy
+   * Silently loads the next bite while the user is reviewing the current one.
+   */
+  const preFetchNextBite = async () => {
+    if (preFetchedBite) return; // Already have one ready
+
+    try {
+      console.log('[Pre-fetch] Silently loading next bite in background (mode: db)...');
+      const res = await generateBite(null, 'db'); // Load random from DB first (Standard)
+      if (res && res.success) {
+        setPreFetchedBite(res);
+        console.log('[Pre-fetch] Next bite ready!');
+      }
+    } catch (error) {
+      console.log('[Pre-fetch] Silent fail, will fetch normally on next click');
+    }
+  };
 
   const loadNewBite = async () => {
+    // Reset timer for new problem
+    setTimeLeft(90);
+    setTimerActive(false);
+
+    // 1. Check if we have a pre-fetched bite ready for instant swap
+    if (preFetchedBite) {
+      console.log('[Load-Bite] Using internal pre-fetched bite for zero-latency swap');
+      const res = preFetchedBite;
+      
+      setReused(res.reused || false);
+      const biteData = res.data;
+      setCurrentBite({ ...biteData, id: biteData.id });
+      
+      if (res.credits_used) {
+        deductCredits(res.credits_used);
+      } else if (!res.reused) {
+        const mode = route.params?.mode || 'db';
+        const amount = mode === 'ai' ? 5 : 2;
+        deductCredits(amount);
+      }
+      
+      setPreFetchedBite(null); // Clear buffer
+      setSelectedAnswer(null);
+      setIsCorrect(null);
+      return;
+    }
+
+    // 2. Normal slow fetch fallback (if pre-fetch failed or user is too fast)
     setLoading(true);
-    setCurrentBite(null); // 이전 문제 확실히 비우기
+    setCurrentBite(null);
     setSelectedAnswer(null);
     setIsCorrect(null);
     try {
-      if (reviewMode && reviewBite) {
-        // 이 경로는 사실 위 useEffect에서 처리되지만 안전장치
-        return;
-      }
+      if (reviewMode && reviewBite) return;
 
-      // 첫 로딩시에만 홈에서 넘어온 토픽 사용, 다음 문제 풀기 시에는 null로 리셋해서 랜덤 출제
       let selectedTopic = null;
       if (initialLoad) {
          selectedTopic = route.params?.topic || null;
          setInitialLoad(false);
       }
       
-      console.log(`[Load-Bite] Requesting new bite for topic: ${selectedTopic || 'Any Random from DB'}`);
+      const mode = route.params?.mode || 'db';
+      console.log(`[Load-Bite] Requesting new bite for topic: ${selectedTopic || 'Any Random from DB'} (Mode: ${mode})`);
       
-      // API 호출과 광고 노출을 병렬로 고려
-      const generatePromise = generateBite(selectedTopic);
-      
-      // 광고가 로드되어 있다면 보여주기
-      if (adLoaded && adRef.current) {
-        adTriggerSourceRef.current = 'loading';
-        adRef.current.show();
-      }
+      // [AdMob Policy Compliance] Comment out the loading ad trigger to avoid unexpected interstitial ads during content load.
+      // if (adLoaded && adRef.current && !initialLoad) {
+      //   adTriggerSourceRef.current = 'loading';
+      //   await adRef.current.show();
+      // }
 
-      const res = await generatePromise;
+      setLoading(true);
+      const res = await generateBite(selectedTopic, mode);
       
-      // Only deduct if it's NOT a reused question
-      if (res && !res.reused) {
-        deductCredits(5);
+      if (res && res.success && res.data) {
+        console.log('[Load-Bite] Successfully loaded new bite:', res.data.id);
+        setReused(res.reused || false);
+        setCurrentBite(res.data);
+        
+        if (res.credits_used) {
+          deductCredits(res.credits_used);
+        } else if (!res.reused) {
+          const mode = route.params?.mode || 'db';
+          const amount = mode === 'ai' ? 5 : 2;
+          deductCredits(amount);
+        }
+      } else {
+        throw new Error('Failed to load bite data');
       }
     } catch (error) {
       Alert.alert(t('common.error'), t('test.generate_error'));
@@ -230,6 +385,9 @@ const Test = ({ navigation, route }) => {
       if (timedOut) {
         Alert.alert(t('test.timeout_title'), t('test.timeout_msg'));
       }
+
+      // 3. TRIGGER PRE-FETCH for next question silently
+      preFetchNextBite();
     } catch (error) {
       console.error('Save Result Error (Client-side):', error);
       Alert.alert(t('test.save_fail'), t('test.save_fail_msg'));
@@ -237,23 +395,34 @@ const Test = ({ navigation, route }) => {
   };
 
   const handleWordClick = async (word) => {
-    // Remove punctuation
-    const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+    if (typeof word !== 'string') return;
+    const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim().toLowerCase();
     if (cleanWord.length < 2) return;
 
     setSelectedWord(cleanWord);
-    setWordLoading(true);
-    setWordMeaning(null);
     setIsSaved(false);
 
+    // 1. Check Local Cache First (Instant)
+    if (vocabCache[cleanWord]) {
+      console.log(`[Define-Word] Cache Hit for: ${cleanWord}`);
+      setWordMeaning(vocabCache[cleanWord]);
+      setWordLoading(false);
+      return;
+    }
+
+    // 2. Network Fallback
+    setWordLoading(true);
+    setWordMeaning(null);
+
     try {
-      console.log(`[Define-Word] Fetching for: ${cleanWord}`);
+      console.log(`[Define-Word] Network Fetch for: ${cleanWord}`);
       const response = await axios.post(`${API_URL}/ai/define-word`, { 
         word: cleanWord,
         context: currentBite.passage,
         language: i18n.language
       });
       setWordMeaning(response.data);
+      setVocabCache(cleanWord, response.data); // Save to cache
     } catch (error) {
       console.error('[Define-Word] API Error:', error.message);
       setWordMeaning({ 
@@ -281,15 +450,21 @@ const Test = ({ navigation, route }) => {
   };
 
   if (loading) {
+    const isAiMode = route.params?.mode === 'ai';
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>
-          {reused 
-            ? t('test.loading_reused')
-            : t('test.loading_new')
+      <View style={[styles.loadingContainer, isAiMode && styles.premiumLoadingContainer]}>
+        <ActivityIndicator size="large" color={isAiMode ? '#FFD700' : COLORS.primary} />
+        <Text style={[styles.loadingText, isAiMode && styles.premiumLoadingText]}>
+          {isAiMode 
+            ? t('test.ai_loading_title')
+            : (reused ? t('test.loading_reused') : t('test.loading_new'))
           }
         </Text>
+        {isAiMode && (
+          <Text style={styles.premiumLoadingSubtitle}>
+            {t('test.ai_loading_subtitle')}
+          </Text>
+        )}
       </View>
     );
   }
@@ -311,7 +486,7 @@ const Test = ({ navigation, route }) => {
         )}
 
         {focusMode ? (
-          <Text style={styles.focusLabel}>{t('test.focus_mode')}</Text>
+          <Text style={styles.focusLabel}>{t('test.focus_mode_active')}</Text>
         ) : (
           <Text style={styles.headerTitle}>{t('test.title')}</Text>
         )}
@@ -326,8 +501,18 @@ const Test = ({ navigation, route }) => {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.passageContainer, focusMode && styles.passageFocus]}>
-          {reused && !focusMode && (
+        <View style={[
+          styles.passageContainer, 
+          focusMode && styles.passageFocus,
+          route.params?.mode === 'ai' && !focusMode && styles.premiumPassageContainer
+        ]}>
+          {route.params?.mode === 'ai' && !focusMode && (
+            <View style={styles.premiumBadge}>
+              <Sparkles size={14} color="#FFD700" fill="#FFD700" />
+              <Text style={styles.premiumBadgeText}>{t('test.ai_badge')}</Text>
+            </View>
+          )}
+          {reused && !focusMode && route.params?.mode !== 'ai' && (
             <View style={styles.badgeContainer}>
               <Text style={styles.badgeText}>{t('test.reused_badge', { count: '1,240' })}</Text>
             </View>
@@ -474,11 +659,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  premiumBadgeText: {
+    color: '#FFD700',
+    fontSize: 10,
+    fontWeight: '900',
+    marginLeft: 6,
+    letterSpacing: 1,
+  },
   loadingContainer: {
     flex: 1,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  premiumLoadingContainer: {
+    backgroundColor: '#0F172A', // Darker background
+  },
+  premiumLoadingText: {
+    color: '#FFD700',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  premiumLoadingSubtitle: {
+    color: 'rgba(255, 215, 0, 0.6)',
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: 'center',
   },
   loadingText: {
     color: COLORS.primary,
@@ -539,6 +758,11 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
+  },
+  premiumPassageContainer: {
+    borderColor: '#FFD700',
+    borderWidth: 1.5,
+    backgroundColor: '#16140B', // Slightly golden tinted dark
   },
   passageFocus: {
     marginTop: 20,

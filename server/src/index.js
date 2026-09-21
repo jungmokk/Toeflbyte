@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRoutes from './routes/apiRoutes.js';
 import mcpService from './services/mcpService.js';
+import googlePlayService from './services/googlePlayService.js';
 import { initCronJobs } from './services/cronService.js';
 
 dotenv.config();
@@ -10,19 +11,20 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Request Logger
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(cors());
 app.use(express.json());
 
-// Request logging (Only for development)
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-  });
-}
 
-// Initialize Knowledge Base (Supabase-RAG)
+// Initialize External Services
+googlePlayService.init();
 mcpService.init().catch(err => console.error("RAG Init Fail:", err));
+initCronJobs();
 
 // Routes
 app.use('/api', apiRoutes);

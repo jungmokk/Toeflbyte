@@ -28,6 +28,12 @@ const VocabularyNote = ({ navigation }) => {
   const [vocabList, setVocabList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quizModalVisible, setQuizModalVisible] = useState(false);
+  
+  // Quiz States
+  const [quizVocabs, setQuizVocabs] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isRevealed, setIsRevealed] = useState(false);
+  const [quizFinished, setQuizFinished] = useState(false);
 
   useEffect(() => {
     fetchVocab();
@@ -67,6 +73,25 @@ const VocabularyNote = ({ navigation }) => {
     );
   };
 
+  const startQuiz = () => {
+    if (vocabList.length < 3) return;
+    const shuffled = [...vocabList].sort(() => 0.5 - Math.random());
+    setQuizVocabs(shuffled);
+    setCurrentIndex(0);
+    setIsRevealed(false);
+    setQuizFinished(false);
+    setQuizModalVisible(true);
+  };
+
+  const handleNext = () => {
+    if (currentIndex < quizVocabs.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      setIsRevealed(false);
+    } else {
+      setQuizFinished(true);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -90,7 +115,7 @@ const VocabularyNote = ({ navigation }) => {
         {vocabList.length >= 3 ? (
           <TouchableOpacity 
             style={styles.quizBanner}
-            onPress={() => setQuizModalVisible(true)}
+            onPress={startQuiz}
           >
             <View style={styles.quizBannerInfo}>
               <Play fill={COLORS.white} color={COLORS.white} size={20} />
@@ -144,17 +169,61 @@ const VocabularyNote = ({ navigation }) => {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t('vocabulary.quiz_beta_title')}</Text>
-            <Text style={styles.modalText}>
-              {t('vocabulary.quiz_beta_desc')}
-            </Text>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setQuizModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>{t('common.confirm')}</Text>
-            </TouchableOpacity>
+          <View style={styles.quizModalContent}>
+            {!quizFinished ? (
+              <>
+                <View style={styles.quizHeader}>
+                  <Text style={styles.quizProgress}>{currentIndex + 1} / {quizVocabs.length}</Text>
+                  <TouchableOpacity onPress={() => setQuizModalVisible(false)}>
+                    <Text style={{ color: COLORS.textSecondary }}>{t('common.close')}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity 
+                  activeOpacity={0.8}
+                  onPress={() => setIsRevealed(!isRevealed)}
+                  style={[styles.flashcard, isRevealed && styles.flashcardRevealed]}
+                >
+                  <Text style={styles.quizWord}>{quizVocabs[currentIndex]?.word}</Text>
+                  
+                  {isRevealed ? (
+                    <View style={styles.quizResultArea}>
+                      <Text style={styles.quizMeaning}>{quizVocabs[currentIndex]?.meaning}</Text>
+                      {quizVocabs[currentIndex]?.context && (
+                        <Text style={styles.quizContext}>"{quizVocabs[currentIndex]?.context}"</Text>
+                      )}
+                    </View>
+                  ) : (
+                    <Text style={styles.tapPrompt}>{t('vocabulary.quiz_tap_to_see')}</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.nextButton, !isRevealed && { opacity: 0.5 }]}
+                  onPress={handleNext}
+                  disabled={!isRevealed}
+                >
+                  <Text style={styles.nextButtonText}>
+                    {currentIndex === quizVocabs.length - 1 ? t('vocabulary.quiz_finish') : t('vocabulary.quiz_next')}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                <View style={styles.successIcon}>
+                  <Play fill={COLORS.primary} color={COLORS.primary} size={40} />
+                </View>
+                <Text style={styles.finishTitle}>{t('vocabulary.quiz_congrats')}</Text>
+                <Text style={styles.finishSubtitle}>{t('vocabulary.quiz_summary', { total: quizVocabs.length })}</Text>
+                
+                <TouchableOpacity 
+                  style={styles.finishButton}
+                  onPress={() => setQuizModalVisible(false)}
+                >
+                  <Text style={styles.finishButtonText}>{t('common.confirm')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -288,33 +357,107 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
+  quizModalContent: {
     backgroundColor: COLORS.surface,
-    width: '80%',
+    width: '90%',
     padding: 24,
-    borderRadius: 24,
-    alignItems: 'center',
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  modalTitle: {
-    fontSize: 20,
+  quizHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+  },
+  quizProgress: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  flashcard: {
+    backgroundColor: COLORS.background,
+    borderRadius: 24,
+    padding: 30,
+    minHeight: 280,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 30,
+  },
+  flashcardRevealed: {
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(74, 110, 255, 0.05)',
+  },
+  quizWord: {
+    fontSize: 32,
     fontWeight: 'bold',
     color: COLORS.text,
+    textAlign: 'center',
+  },
+  tapPrompt: {
+    marginTop: 20,
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  quizResultArea: {
+    marginTop: 30,
+    alignItems: 'center',
+    width: '100%',
+  },
+  quizMeaning: {
+    fontSize: 22,
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 16,
   },
-  modalText: {
+  quizContext: {
     fontSize: 15,
     color: COLORS.textSecondary,
+    fontStyle: 'italic',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
   },
-  closeButton: {
+  nextButton: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
   },
-  closeButtonText: {
+  nextButtonText: {
+    color: COLORS.white,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  successIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(74, 110, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  finishTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  finishSubtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    marginBottom: 30,
+  },
+  finishButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 16,
+  },
+  finishButtonText: {
     color: COLORS.white,
     fontWeight: 'bold',
   }

@@ -1,0 +1,14 @@
+node_modules
+.expo
+dist
+web-build
+android
+ios
+artifacts
+build-*
+*.aab
+*.apk
+*.log
+.git
+.idea
+.vscode

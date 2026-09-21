@@ -23,8 +23,8 @@ import { useTranslation } from 'react-i18next';
 
 const Home = ({ navigation }) => {
   const { t } = useTranslation();
-  const { credits, history } = useStore();
-  const { getRandomBites } = useBite();
+  const { credits, history, preFetchedBite, setPreFetchedBite } = useStore();
+  const { getRandomBites, generateBite, syncUser } = useBite();
   
   const [randomBites, setRandomBites] = useState([]);
   const [loadingBites, setLoadingBites] = useState(true);
@@ -35,30 +35,16 @@ const Home = ({ navigation }) => {
       return { accuracy: 0, wpm: 0, streak: 0 };
     }
 
-    const correctAnswers = history.filter(curr => curr.isCorrect).length;
-    const avgAccuracy = Math.round((correctAnswers / history.length) * 100);
+    const totalAccuracy = history.reduce((acc, curr) => acc + (curr.accuracy || 0), 0);
+    const avgAccuracy = Math.round(totalAccuracy / history.length);
     
-    // Calculate WPM
-    let totalWpm = 0;
-    let wpmCount = 0;
-
-    history.forEach((curr) => {
-      if (curr.timeSpent && curr.timeSpent > 0 && curr.question && curr.question.content_json) {
-         try {
-            const content = typeof curr.question.content_json === 'string' ? JSON.parse(curr.question.content_json) : curr.question.content_json;
-            const wordCount = content.passage ? content.passage.split(/\\s+/).length : 200;
-            const itemWpm = (wordCount / curr.timeSpent) * 60;
-            totalWpm += itemWpm;
-            wpmCount++;
-         } catch(e) {}
-      }
-    });
-
-    const avgWpm = wpmCount > 0 ? Math.round(totalWpm / wpmCount) : 0;
+    // For WPM, we can take the average of recent tests
+    const totalWpm = history.reduce((acc, curr) => acc + (curr.wpm || 0), 0);
+    const avgWpm = Math.round(totalWpm / history.length);
 
     // Simplistic streak calculation: count unique days in history
     const uniqueDays = new Set(history.map(item => {
-      const date = new Date(item.solvedAt || item.timestamp || Date.now());
+      const date = new Date(item.timestamp);
       return date.toDateString();
     })).size;
 
@@ -72,6 +58,17 @@ const Home = ({ navigation }) => {
   const stats = calculateStats();
   
   useEffect(() => {
+    // 1. Warm-up the server (mitigate Render.com cold start)
+    const warmUpServer = async () => {
+      try {
+        console.log('[Home-Warmup] Waking up server...');
+        // Use a lightweight endpoint to trigger the instance boot-up
+        await syncUser?.(); 
+      } catch (e) {
+        console.log('[Home-Warmup] Warmup ping ignored/failed');
+      }
+    };
+
     const fetchBites = async () => {
       const res = await getRandomBites(5);
       if (res && res.data) {
@@ -79,7 +76,35 @@ const Home = ({ navigation }) => {
       }
       setLoadingBites(false);
     };
-    fetchBites();
+    
+    // PRE-FETCH the first bite for zero-latency start
+    const preFetchFirstBite = async () => {
+      try {
+        console.log('[Home-Pre-fetch] Initiating background load for instant start...');
+        // If we already have a pre-fetched bite, don't fetch again unnecessarily
+        const res = await generateBite(null);
+        if (res && res.success) {
+          setPreFetchedBite(res);
+          console.log('[Home-Pre-fetch] Background bite cached in store.');
+        }
+      } catch (e) {
+        console.log('Pre-fetch failed, falling back to manual load');
+      }
+    };
+
+    // Initialize home screen data sequentially to avoid race conditions
+    const initHome = async () => {
+      // 1. Ensure user is synced first
+      await warmUpServer();
+      
+      // 2. Then proceed with data loading in parallel
+      fetchBites();
+      preFetchFirstBite();
+    };
+
+    initHome();
+
+    return () => {};
   }, []);
 
   return (
@@ -131,7 +156,15 @@ const Home = ({ navigation }) => {
         {/* Main Action Button */}
         <AnimatedButton 
           style={styles.mainActionButton}
-          onPress={() => navigation.navigate('Test', { topic: null })}
+          onPress={() => {
+            // Pass pre-fetched bite for zero-latency start, then clear store
+            const params = { topic: null, mode: 'db' };
+            if (preFetchedBite) {
+              params.preFetchedBite = preFetchedBite;
+              setPreFetchedBite(null);
+            }
+            navigation.navigate('Test', params);
+          }}
         >
           <View style={styles.actionIconContainer}>
             <BookOpen color={COLORS.white} size={32} />
@@ -139,6 +172,9 @@ const Home = ({ navigation }) => {
           <View style={styles.actionTextContainer}>
             <Text style={styles.actionTitle}>{t('home.start_reading')}</Text>
             <Text style={styles.actionSubtitle}>{t('home.start_subtitle')}</Text>
+          </View>
+          <View style={styles.standardPriceTag}>
+            <Text style={styles.standardPriceText}>2P</Text>
           </View>
           <ChevronRight color="rgba(255,255,255,0.5)" size={24} />
         </AnimatedButton>
@@ -150,7 +186,7 @@ const Home = ({ navigation }) => {
 
         <AnimatedButton 
           style={styles.premiumSectionCard}
-          onPress={() => navigation.navigate('Test', { topic: 'PREMIUM_2026' })}
+          onPress={() => navigation.navigate('Test', { topic: '2026 Hot Trends in Science and Society', mode: 'ai' })}
         >
           <View style={styles.premiumIconContainer}>
             <Flame color="#FF4D4D" size={28} />
@@ -161,7 +197,7 @@ const Home = ({ navigation }) => {
               <Sparkles size={14} color="#FFD700" />
             </View>
             <Text style={styles.premiumTitle}>2026 HOT! 올해의 예상 기출</Text>
-            <Text style={styles.premiumSubtitle}>실시간 시사 반영 킬러 문항</Text>
+            <Text style={styles.premiumSubtitle}>{t('home.premium_subtitle')}</Text>
           </View>
           <View style={styles.premiumPriceTag}>
             <Text style={styles.premiumPriceText}>5P</Text>
@@ -194,7 +230,7 @@ const Home = ({ navigation }) => {
               <AnimatedButton 
                 key={item.id} 
                 style={styles.shortByteCard}
-                onPress={() => navigation.navigate('Test', { topic: item.topic })}
+                onPress={() => navigation.navigate('Test', { topic: item.topic, mode: 'db' })}
               >
                 <View style={styles.shortByteIcon}>
                   <Clock color={COLORS.primary} size={20} />
@@ -202,6 +238,9 @@ const Home = ({ navigation }) => {
                 <View style={{flex: 1}}>
                   <Text style={styles.shortByteTitle} numberOfLines={1}>{item.topic || 'General Topic'}</Text>
                   <Text style={styles.shortByteMeta}>지문 약 {contentLen}자 • {t('home.time_1min', '약 1분')}</Text>
+                </View>
+                <View style={[styles.standardPriceTag, { marginRight: 8, backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                  <Text style={[styles.standardPriceText, { color: COLORS.text }]}>2P</Text>
                 </View>
                 <View style={styles.goBadge}>
                   <Text style={styles.goText}>GO</Text>
@@ -217,7 +256,7 @@ const Home = ({ navigation }) => {
       {/* Banner Ad at bottom */}
       <View style={{ alignItems: 'center', backgroundColor: COLORS.background, paddingBottom: 10 }}>
         <BannerAd
-          unitId={process.env.EXPO_PUBLIC_ADMOB_BANNER_ID || TestIds.BANNER}
+          unitId={process.env.EXPO_PUBLIC_ADMOB_BANNER_ID || 'ca-app-pub-5136549253813943/4617303059'}
           size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
           requestOptions={{
             requestNonPersonalizedAdsOnly: true,
@@ -472,6 +511,20 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     fontWeight: 'bold',
     fontSize: 12,
+  },
+  standardPriceTag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginHorizontal: 8,
+  },
+  standardPriceText: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    fontSize: 11,
   },
 });
 

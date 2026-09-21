@@ -31,9 +31,12 @@ const Login = ({ navigation }) => {
   const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
+    // google-services.json(L33)에서 확인된 진짜 Web Client ID 사용
+    // 로컬(SHA1: 5E:8F...)과 프로덕션(SHA1: F7:7F...) 모두 이 하나의 Web ID로 인증됩니다.
     GoogleSignin.configure({
-      webClientId: '744776080787-sjbgmavm4u2o9lclreoi2iegs1kcmss3.apps.googleusercontent.com',
+      webClientId: '743882997184-g2tbbb59vfkr4mle6ulsjj76g8dkj9dj.apps.googleusercontent.com',
       offlineAccess: true,
+      scopes: ['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'],
     });
   }, []);
 
@@ -42,29 +45,25 @@ const Login = ({ navigation }) => {
     try {
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
-      console.log('Google Sign-In full response:', JSON.stringify(response, null, 2));
-
-      // v11+에서는 response.data에 정보가 들어있고, 하위 호환성을 위해 체크
+      
       const idToken = response.data?.idToken || response.idToken;
 
       if (idToken) {
-        console.log('Attempting Supabase signInWithIdToken...');
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: idToken,
         });
         
         if (error) throw error;
-        
-        console.log('Supabase Google Sign-In success:', data.session ? 'Session exists' : 'No session');
-        // 세션 정보가 있으면 AppNavigator에서 감지하겠지만, 강제로 트리거되도록 
-        // 만약 세션이 있음에도 화면 전환이 안된다면 AppNavigator 이슈일 수 있음
       } else {
         throw new Error(t('login.no_google_token'));
       }
     } catch (error) {
       if (error.code !== statusCodes.SIGN_IN_CANCELLED) {
-        Alert.alert(t('login.error_title'), error.message);
+        Alert.alert(
+          t('login.error_title'), 
+          error.code === '10' ? t('login.developer_error_alert') : error.message
+        );
       }
     } finally {
       setGoogleLoading(false);
@@ -72,6 +71,23 @@ const Login = ({ navigation }) => {
   }
 
 
+  async function handleOpenPolicy() {
+    try {
+      const url = 'https://jungmokk.github.io/toeflbyte-privacy.html';
+      await WebBrowser.openBrowserAsync(url);
+    } catch (error) {
+      Alert.alert(t('common.error'), 'Failed to open policy page.');
+    }
+  }
+
+  async function handleOpenDataDeletion() {
+    try {
+      const url = 'https://jungmokk.github.io/data-deletion.html';
+      await WebBrowser.openBrowserAsync(url);
+    } catch (error) {
+      Alert.alert(t('common.error'), 'Failed to open data deletion page.');
+    }
+  }
 
   async function signInWithEmail() {
     setLoading(true);
@@ -82,7 +98,13 @@ const Login = ({ navigation }) => {
 
   async function signUpWithEmail() {
     setLoading(true);
-    const { data: { session }, error } = await supabase.auth.signUp({ email, password });
+    const { data: { session }, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: Linking.createURL('login-callback'),
+      }
+    });
     if (error) Alert.alert(t('login.signup_fail_title'), error.message);
     if (!session && !error) Alert.alert(t('common.confirm'), t('login.verify_email_sent'));
     setLoading(false);
@@ -122,11 +144,12 @@ const Login = ({ navigation }) => {
           <TouchableOpacity style={styles.googleButton} onPress={signInWithGoogle} disabled={googleLoading}>
             {googleLoading ? <ActivityIndicator color={COLORS.text} /> : (
               <>
-                <Image source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_\"G\"_logo.svg/1024px-Google_\"G\"_logo.svg.png' }} style={styles.googleIcon} />
+                <Image source={require('../../../assets/g-logo.png')} style={styles.googleIcon} />
                 <Text style={styles.googleButtonText}>{t('login.google_continue')}</Text>
               </>
             )}
           </TouchableOpacity>
+
         </View>
 
         <View style={styles.footer}>
@@ -135,6 +158,16 @@ const Login = ({ navigation }) => {
               {isSignUp ? t('login.already_have_account') : t('login.not_member_yet')}
               <Text style={styles.footerLink}>{isSignUp ? t('login.title') : t('login.start_signup')}</Text>
             </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.legalFooter}>
+          <TouchableOpacity onPress={handleOpenPolicy}>
+            <Text style={styles.legalLink}>{t('settings.privacy_policy')}</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalSeparator}>|</Text>
+          <TouchableOpacity onPress={handleOpenDataDeletion}>
+            <Text style={styles.legalLink}>데이터 삭제 정책</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -161,41 +194,27 @@ const styles = StyleSheet.create({
   googleButton: { backgroundColor: COLORS.white, height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
   googleIcon: { width: 20, height: 20, marginRight: 12 },
   googleButtonText: { color: '#1F2937', fontSize: 16, fontWeight: '600' },
-  kakaoButton: {
-    backgroundColor: '#FEE500',
-    height: 56,
-    borderRadius: 16,
-    marginTop: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  kakaoContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  kakaoSymbol: {
-    width: 20,
-    height: 20,
-    backgroundColor: '#3C1E1E',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  kakaoSymbolText: {
-    color: '#FEE500',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  kakaoButtonText: {
-    color: '#000000',
-    fontSize: 16,
-    fontWeight: '600',
-    opacity: 0.85,
-  },
-  footer: { marginTop: 32 },
+  footer: { marginTop: 32, marginBottom: 16 },
   footerText: { color: COLORS.textSecondary, fontSize: 14 },
-  footerLink: { color: COLORS.primary, fontWeight: 'bold', textDecorationLine: 'underline' }
+  footerLink: { color: COLORS.primary, fontWeight: 'bold', textDecorationLine: 'underline' },
+  legalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+    opacity: 0.6,
+  },
+  legalLink: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginHorizontal: 10,
+  }
 });
 
 export default Login;

@@ -2,7 +2,7 @@ import express from 'express';
 import { generateBite, saveResult, getSummary, getRandomBites } from '../controllers/testController.js';
 import { chatTutor } from '../controllers/chatController.js';
 import { checkAndDeductCredits } from '../middleware/creditMiddleware.js';
-import { rechargeCredits, syncUser, upgradePremium, rewardCredits } from '../controllers/creditController.js';
+import { rechargeCredits, syncUser, upgradePremium, rewardCredits, deleteUserAccount } from '../controllers/creditController.js';
 import { saveWord, getVocabList, deleteWord, getVocabQuiz } from '../controllers/vocabController.js';
 import { defineWord } from '../controllers/aiController.js';
 
@@ -13,6 +13,7 @@ router.get('/user/sync', syncUser);
 router.post('/credits/recharge', rechargeCredits);
 router.post('/credits/upgrade-premium', upgradePremium);
 router.post('/credits/reward', rewardCredits);
+router.post('/user/delete', deleteUserAccount);
 
 // Vocabulary
 router.post('/vocab/save', saveWord);

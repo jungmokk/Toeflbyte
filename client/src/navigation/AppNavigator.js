@@ -15,6 +15,7 @@ import Store from '../screens/Store/Store';
 import { Home as HomeIcon, BookOpen, Settings as SettingsIcon } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import useStore from '../store/useStore';
+import { recordScreenTransition } from '../lib/ads';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -51,24 +52,53 @@ const AppNavigator = () => {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUserId(session?.user?.id || null);
-      setLoading(false);
-    });
+    let isMounted = true;
+    
+    // 3초 타임아웃 안전망: 네트워크 장애나 서버 휴면 상태에서도 앱이 무한 로딩에 갇히지 않도록 방어
+    const fallbackTimer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }, 3000);
+
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        if (!isMounted) return;
+        setSession(data?.session || null);
+        setUserId(data?.session?.user?.id || null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.warn('[AppNavigator] Failed to get session:', err);
+        if (isMounted) {
+          setLoading(false);
+        }
+      })
+      .finally(() => {
+        clearTimeout(fallbackTimer);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
       setSession(session);
       setUserId(session?.user?.id || null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(fallbackTimer);
+      subscription?.unsubscribe();
+    };
   }, []);
 
   if (loading) return null;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      onStateChange={() => {
+        recordScreenTransition();
+      }}
+    >
       <Stack.Navigator
         screenOptions={{
           headerShown: false,

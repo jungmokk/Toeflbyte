@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 const Chat = ({ route, navigation }) => {
   const { context } = route.params;
   const { t } = useTranslation();
-  const { getTutorChat } = useBite();
+  const { getTutorChat, getTutorChatStream } = useBite();
   const { saveWord } = useVocab();
   const { deductCredits } = useStore();
   const scrollViewRef = React.useRef(null);
@@ -37,12 +37,24 @@ const Chat = ({ route, navigation }) => {
 
   const handleInitialExplanation = async () => {
     setIsTyping(true);
+    // Add a placeholder message for the streaming content
+    setMessages([{ role: 'assistant', content: '' }]);
+    
     try {
-      const response = await getTutorChat(t('chat.initial_query'), context);
-      setMessages([{ role: 'assistant', content: response.reply }]);
-      deductCredits(1);
+      const result = await getTutorChatStream(
+        t('chat.initial_query'), 
+        context, 
+        [], 
+        (content) => {
+          setMessages([{ role: 'assistant', content }]);
+        }
+      );
+      if (result?.success) {
+        deductCredits(1);
+      }
     } catch (error) {
       console.error(error);
+      setMessages([{ role: 'assistant', content: '일타강사 연결에 문제가 발생했어요. 잠시 후 다시 시도해주세요!' }]);
     } finally {
       setIsTyping(false);
     }
@@ -75,16 +87,56 @@ const Chat = ({ route, navigation }) => {
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     
+    const history = messages.length > 0 ? messages : [];
+    
     setIsTyping(true);
+    // Add user message and a placeholder for assistant
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    
     try {
-      const response = await getTutorChat(userMsg, context, messages);
-      setMessages(prev => [...prev, { role: 'assistant', content: response.reply }]);
+      await getTutorChatStream(
+        userMsg, 
+        context, 
+        history, 
+        (content) => {
+          setMessages(prev => {
+            const next = [...prev];
+            // content는 이제 string[] (블록 배열)
+            next[next.length - 1] = { role: 'assistant', content };
+            return next;
+          });
+        }
+      );
       deductCredits(1);
     } catch (error) {
       console.error(error);
     } finally {
       setIsTyping(false);
     }
+  };
+
+  // 마크다운 볼드(**text**)를 감지하여 렌더링하는 함수
+  const renderFormattedText = (text, isUser = false) => {
+    if (!text) return null;
+    
+    // 텍스트에서 불필요한 "** ?? **" 패턴이 남아있을 경우 제거 (서버 업데이트 전 데이터 대응)
+    const cleanedText = text.replace(/\*\* \?\? \*\*/g, "").replace(/\?\?/g, "");
+    
+    // **로 텍스트 분리 (캡처 그룹을 사용하여 구분자도 결과에 포함)
+    const parts = cleanedText.split(/(\*\*.*?\*\*)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        // 강조 구문인 경우
+        const boldText = part.slice(2, -2);
+        return (
+          <Text key={index} style={{ fontWeight: '800', color: isUser ? COLORS.white : COLORS.primary }}>
+            {boldText}
+          </Text>
+        );
+      }
+      return part;
+    });
   };
 
   return (
@@ -136,17 +188,37 @@ const Chat = ({ route, navigation }) => {
               styles.bubbleContainer, 
               msg.role === 'user' ? styles.userContainer : styles.assistantContainer
             ]}>
-              <View style={[
-                styles.bubble,
-                msg.role === 'user' ? styles.userBubble : styles.assistantBubble
-              ]}>
-                <Text style={[
-                  styles.bubbleText,
-                  msg.role === 'user' ? {color: COLORS.white} : {color: COLORS.text}
+              {Array.isArray(msg.content) ? (
+                // 튜터의 답변이 여러 블록(배열)인 경우 리스트로 렌더링
+                <View style={styles.multiBubbleWrapper}>
+                  {msg.content.map((block, bIdx) => (
+                    <View key={bIdx} style={[
+                      styles.bubble,
+                      styles.assistantBubble,
+                      // 연속된 버블 사이의 간격 조정 및 모서리 둥글기 처리
+                      bIdx > 0 && { marginTop: 4 },
+                      bIdx < msg.content.length - 1 && { borderBottomLeftRadius: 20 }
+                    ]}>
+                      <Text style={[styles.bubbleText, { color: COLORS.text }]}>
+                        {renderFormattedText(block)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                // 일반 텍스트(유저 메시징 등)인 경우 단일 버블 렌더링
+                <View style={[
+                  styles.bubble,
+                  msg.role === 'user' ? styles.userBubble : styles.assistantBubble
                 ]}>
-                  {msg.content}
-                </Text>
-              </View>
+                  <Text style={[
+                    styles.bubbleText,
+                    msg.role === 'user' ? {color: COLORS.white} : {color: COLORS.text}
+                  ]}>
+                    {renderFormattedText(msg.content, msg.role === 'user')}
+                  </Text>
+                </View>
+              )}
             </View>
           ))}
           {isTyping && (
@@ -245,6 +317,10 @@ const styles = StyleSheet.create({
   },
   assistantContainer: {
     justifyContent: 'flex-start',
+  },
+  multiBubbleWrapper: {
+    maxWidth: '85%',
+    gap: 4,
   },
   bubble: {
     maxWidth: '85%',

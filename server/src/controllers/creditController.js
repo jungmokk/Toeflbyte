@@ -1,3 +1,5 @@
+import googlePlayService from '../services/googlePlayService.js';
+import appleStoreService from '../services/appleStoreService.js';
 import supabase from '../config/db.js';
 
 /**
@@ -42,19 +44,29 @@ export const syncUser = async (req, res) => {
 };
 
 /**
- * Recharge credits (Simulated Payment)
+ * Recharge credits (Real Google Play Transaction)
  */
 export const rechargeCredits = async (req, res) => {
   try {
-    const { amount, planId } = req.body;
+    const { amount, planId, receipt, platform = 'android' } = req.body;
     const userId = req.headers['x-user-id'];
 
     if (!userId) return res.status(400).json({ success: false, error: "User ID required" });
+    if (!receipt) return res.status(400).json({ success: false, error: "Purchase receipt required" });
 
-    // Mock payment verification delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // 1. Verify with appropriate store
+    let verification;
+    if (platform === 'ios') {
+      verification = await appleStoreService.verifyProduct(planId, receipt);
+    } else {
+      verification = await googlePlayService.verifyProduct(planId, receipt);
+    }
 
-    // Get current balance
+    if (!verification.success) {
+      return res.status(402).json({ success: false, error: "Payment verification failed", details: verification.error });
+    }
+
+    // 2. Get current balance
     const { data: user, error: fetchError } = await supabase
       .from('User')
       .select('credit_balance')
@@ -65,6 +77,7 @@ export const rechargeCredits = async (req, res) => {
 
     const newBalance = user.credit_balance + amount;
 
+    // 3. Update balance
     const { data: updatedUser, error: updateError } = await supabase
       .from('User')
       .update({ credit_balance: newBalance })
@@ -77,25 +90,47 @@ export const rechargeCredits = async (req, res) => {
     res.json({
       success: true,
       message: `${amount} credits recharged successfully!`,
-      newBalance: updatedUser.credit_balance
+      newBalance: updatedUser.credit_balance,
+      mock: verification.mock || false
     });
   } catch (error) {
+    console.error('[Recharge-Error]', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 /**
- * Upgrade to Premium (Simulated Payment)
+ * Upgrade to Premium (Real Google Play Subscription)
  */
 export const upgradePremium = async (req, res) => {
   try {
+    const { planId, receipt, platform = 'android' } = req.body;
     const userId = req.headers['x-user-id'];
+    
     if (!userId) return res.status(400).json({ success: false, error: "User ID required" });
+    if (!receipt) return res.status(400).json({ success: false, error: "Subscription receipt required" });
 
+    // 1. Verify with appropriate store
+    let verification;
+    if (platform === 'ios') {
+      verification = await appleStoreService.verifySubscription(planId, receipt);
+    } else {
+      verification = await googlePlayService.verifySubscription(planId, receipt);
+    }
+
+    if (!verification.success) {
+      return res.status(402).json({ success: false, error: "Subscription verification failed", details: verification.error });
+    }
+
+    // 2. Set expiry (default 1 month or 1 year)
     const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + 1); // 1 month from now
+    if (planId === 'premium_yearly') {
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    } else {
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+    }
 
-    // Get current balance to add bonus
+    // 3. Update User table
     const { data: user, error: fetchError } = await supabase
       .from('User')
       .select('credit_balance')
@@ -104,12 +139,14 @@ export const upgradePremium = async (req, res) => {
     
     if (fetchError) throw fetchError;
 
+    const bonusCredits = planId === 'premium_yearly' ? 2000 : 500;
+
     const { data: updatedUser, error: updateError } = await supabase
       .from('User')
       .update({
         is_premium: true,
         premium_expires_at: expiresAt,
-        credit_balance: user.credit_balance + 500 // Bonus credits for premium
+        credit_balance: user.credit_balance + bonusCredits
       })
       .eq('id', userId)
       .select()
@@ -124,9 +161,11 @@ export const upgradePremium = async (req, res) => {
         isPremium: updatedUser.is_premium,
         expiresAt: updatedUser.premium_expires_at,
         newBalance: updatedUser.credit_balance
-      }
+      },
+      mock: verification.mock || false
     });
   } catch (error) {
+    console.error('[UpgradePremium-Error]', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -167,6 +206,55 @@ export const rewardCredits = async (req, res) => {
       newBalance: updatedUser.credit_balance
     });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * Delete User Account and all associated data
+ */
+export const deleteUserAccount = async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'];
+    if (!userId) return res.status(400).json({ success: false, error: "User ID required" });
+
+    console.log(`[DeleteAccount] Deleting all data for user: ${userId}`);
+
+    // 1. Transaction-related
+    await supabase.from('InAppPurchase').delete().eq('userId', userId);
+    await supabase.from('Subscription').delete().eq('userId', userId);
+    
+    // 2. Performance & Submissions
+    await supabase.from('WritingSubmission').delete().eq('userId', userId);
+    await supabase.from('SpeakingSubmission').delete().eq('userId', userId);
+    await supabase.from('BiteResult').delete().eq('userId', userId);
+    
+    // 3. User Engagement
+    await supabase.from('Attendance').delete().eq('userId', userId);
+    await supabase.from('DailyUsage').delete().eq('userId', userId);
+    await supabase.from('ShareLog').delete().eq('userId', userId);
+    await supabase.from('ReferralUsage').delete().eq('referredUserId', userId); // FK is referredUserId
+    await supabase.from('Referral').delete().eq('userId', userId);
+    
+    // 4. Learning Content
+    await supabase.from('ChatHistory').delete().eq('userId', userId);
+    await supabase.from('Vocabulary').delete().eq('userId', userId);
+    await supabase.from('BiteQuestion').delete().eq('userId', userId);
+    
+    // 5. User (Final step)
+    const { error: userDeleteError } = await supabase.from('User').delete().eq('id', userId);
+    
+    if (userDeleteError) {
+      console.error('[DeleteAccount] User Table Error:', userDeleteError);
+      throw userDeleteError;
+    }
+
+    res.json({ 
+      success: true, 
+      message: "모든 계정이 성공적으로 탈퇴 처리되었고, 연동된 데이터가 삭제되었습니다." 
+    });
+  } catch (error) {
+    console.error('[DeleteAccount-Error]', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

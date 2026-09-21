@@ -52,6 +52,12 @@ class LLMService {
           ],
           response_format: { type: 'json_object' },
         });
+
+        if (response.usage) {
+          const { prompt_tokens, completion_tokens, total_tokens } = response.usage;
+          console.log(`[DeepSeek Usage] P: ${prompt_tokens}, C: ${completion_tokens}, T: ${total_tokens}`);
+        }
+
         return JSON.parse(response.choices[0].message.content);
       } catch (error) {
         console.error("DeepSeek API Error:", error.message);
@@ -91,6 +97,19 @@ class LLMService {
           ],
           response_format: { type: 'json_object' },
         });
+
+        if (response.usage) {
+          const { prompt_tokens, completion_tokens, total_tokens } = response.usage;
+          console.log(`[Qwen Usage] P: ${prompt_tokens}, C: ${completion_tokens}, T: ${total_tokens}`);
+          
+          // 전역/요청별 토큰 추적을 위해 응답에 메타데이터로 포함 (선택사항)
+          const content = JSON.parse(response.choices[0].message.content);
+          if (typeof content === 'object') {
+            content._usage = response.usage; 
+          }
+          return content;
+        }
+
         return JSON.parse(response.choices[0].message.content);
       } catch (error) {
         console.error(`Qwen API Error (${model}):`, error.message);
@@ -109,7 +128,8 @@ class LLMService {
         const langNames = { ko: "Korean", ja: "Japanese", "zh-TW": "Traditional Chinese (Taiwan)" };
         const targetLang = langNames[language] || "Korean";
         const systemPrompt = `You are a helpful TOEFL vocabulary assistant. Return JSON: { "meaning": "Short ${targetLang} meaning", "example": "Short English sentence using the word in TOEFL style" }`;
-        const userPrompt = `Define '${word}' based on this context: '${context}'`;
+        const userPrompt = `Define '${word}' as it is used in this specific context: '${context}'.
+        Focus on providing a precise ${targetLang} translation that fits the sentence.`;
 
         const response = await this.qwen.chat.completions.create({
           model: "qwen-flash",
@@ -197,6 +217,61 @@ class LLMService {
     }
 
     throw new Error("No LLM service available for chat.");
+  }
+
+  /**
+   * REAL-TIME STREAMING for chat interactions
+   */
+  async generateChatStream(systemPrompt, userPrompt, history = []) {
+    // Try DeepSeek Streaming
+    if (this.openai) {
+      try {
+        console.log("Streaming with DeepSeek (History length: " + history.length + ")");
+        const messages = [
+          { role: "system", content: systemPrompt },
+          ...history.map(msg => ({
+            role: msg.role === 'assistant' ? 'assistant' : 'user',
+            content: msg.content
+          })),
+          { role: "user", content: userPrompt }
+        ];
+
+        return await this.openai.chat.completions.create({
+          model: "deepseek-chat",
+          messages: messages,
+          stream: true
+        });
+      } catch (error) {
+        console.error("DeepSeek Streaming Error:", error.message);
+      }
+    }
+
+    // Fallback to Gemini Streaming
+    if (this.geminiModel) {
+      try {
+        console.log("Streaming with Gemini...");
+        const geminiHistory = history.map(msg => ({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
+        }));
+
+        const chat = this.geminiModel.startChat({
+          history: [
+            { role: "user", parts: [{ text: systemPrompt }] },
+            { role: "model", parts: [{ text: "Understood. I will act as the Star Tutor." }] },
+            ...geminiHistory
+          ],
+        });
+
+        const result = await chat.sendMessageStream(userPrompt);
+        return result.stream;
+      } catch (error) {
+        console.error("Gemini Streaming Error:", error.message);
+        throw error;
+      }
+    }
+
+    throw new Error("No LLM service available for streaming.");
   }
 
   /**

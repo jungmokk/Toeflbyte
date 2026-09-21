@@ -38,24 +38,45 @@ class MCPService {
         .limit(1)
         .maybeSingle();
 
+      if (exactError) {
+        console.warn(`[RAG] Exact match query error for '${noteTitle}':`, exactError.message);
+      }
+
       if (exactMatch && exactMatch.content) {
         content = exactMatch.content;
       } else {
         // 2. Fallback to vector similarity (Semantic Search)
         console.log(`[RAG] No exact match, trying semantic search for: ${noteTitle}`);
-        const embedding = await llmService.generateEmbedding(noteTitle);
         
-        // Execute the match_knowledge RPC function we created in Supabase
-        const { data: similarMatches, error: searchError } = await supabase.rpc('match_knowledge', {
-          query_embedding: embedding,
-          match_threshold: 0.7, // 70% similarity match
-          match_count: 1
-        });
+        try {
+          let embedding = await llmService.generateEmbedding(noteTitle);
+          
+          // Ensure embedding is exactly 3072 dimensions (required by Supabase)
+          // This prevents "different vector dimensions" errors while we transition models
+          if (embedding.length !== 3072) {
+            console.log(`[RAG] Dimension mismatch detected: ${embedding.length} vs 3072. Padding/Truncating...`);
+            if (embedding.length < 3072) {
+              embedding = [...embedding, ...new Array(3072 - embedding.length).fill(0)];
+            } else {
+              embedding = embedding.slice(0, 3072);
+            }
+          }
+          
+          // Execute the match_knowledge RPC function we created in Supabase
+          const { data: similarMatches, error: searchError } = await supabase.rpc('match_knowledge', {
+            query_embedding: embedding,
+            match_threshold: 0.7, // 70% similarity match
+            match_count: 1
+          });
 
-        if (similarMatches && similarMatches.length > 0) {
-          content = similarMatches[0].content;
-        } else if (searchError) {
-          console.error("Vector Search Error:", searchError);
+          if (searchError) {
+            console.error(`[RAG] Vector Search RPC Error for '${noteTitle}':`, searchError.message);
+            // DO NOT THROW HERE, return fallback content
+          } else if (similarMatches && similarMatches.length > 0) {
+            content = similarMatches[0].content;
+          }
+        } catch (innerError) {
+          console.error(`[RAG] Internal Embedding/RPC error for '${noteTitle}':`, innerError.message);
         }
       }
 
@@ -63,8 +84,8 @@ class MCPService {
       return content;
 
     } catch (error) {
-      console.error("[RAG] Knowledge base fetch error:", error);
-      return content;
+      console.error(`[RAG] Critical knowledge base fetch error for '${noteTitle}':`, error.message);
+      return content; // Always return fallback
     }
   }
 }

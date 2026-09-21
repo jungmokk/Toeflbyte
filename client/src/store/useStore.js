@@ -18,8 +18,10 @@ const useStore = create(
       
       // Test/Session State
       currentBite: null,
+      preFetchedBite: null,
       reused: false,
       history: [], 
+      vocabCache: {}, // Local word cache
       
       // App Settings
       persona: 'tsun',
@@ -31,20 +33,27 @@ const useStore = create(
       setHasCompletedOnboarding: (status) => set({ hasCompletedOnboarding: status }),
       
       setCurrentBite: (bite) => set({ currentBite: bite }),
+      setPreFetchedBite: (bite) => set({ preFetchedBite: bite }),
       setReused: (status) => set({ reused: status }),
       setPersona: (type) => set({ persona: type }),
       setTimerEnabled: (enabled) => set({ timerEnabled: enabled }),
       setIsPremium: (status) => set({ isPremium: status }),
       setIsAdmin: (status) => set({ isAdmin: status }),
+      setVocabCache: (word, definition) => set((state) => ({ 
+        vocabCache: { ...state.vocabCache, [word.toLowerCase()]: definition } 
+      })),
       addToHistory: (entry) => set((state) => ({ history: [entry, ...state.history].slice(0, 50) })),
       
       // Reset for logout
       resetStore: () => set({
-        credits: 50, // Reset to 50 for new users or fresh state
+        credits: 50,
         userId: null,
         session: null,
         currentBite: null,
         history: [],
+        vocabCache: {},
+        isPremium: false,
+        isAdmin: false,
       })
     }),
     {

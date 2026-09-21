@@ -26,7 +26,7 @@ const ReviewDetail = ({ navigation, route }) => {
   const [isSaved, setIsSaved] = useState(false);
 
   const handleWordClick = async (word) => {
-    const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+    const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim().toLowerCase();
     if (cleanWord.length < 2) return;
 
     setSelectedWord(cleanWord);

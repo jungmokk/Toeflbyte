@@ -31,5 +31,15 @@ client/build-*
 *.apk
 *.aab
 *.ipa
-# google-services.json
-# test_qwen_cjs.js
+
+# Secrets & Keys
+*keystore*
+*.keystore
+*service-account*.json
+*.jks
+.vscode/
+
+# Local links and sub-repos
+Toefl-study
+jungmokk.github.io/
+

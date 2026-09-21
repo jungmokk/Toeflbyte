@@ -3,7 +3,7 @@ import llmService from '../services/llmService.js';
 
 export const chatTutor = async (req, res) => {
   try {
-    const { message, question_context, persona: personaType = 'tsun', language = 'ko' } = req.body;
+    const { message, question_context, persona: personaType = 'tsun', language = 'ko', stream = false } = req.body;
 
     // 언어별 스타일 정의
     const styles = {
@@ -30,9 +30,11 @@ export const chatTutor = async (req, res) => {
     const targetStyle = styles[language] || styles.ko;
     const personaStyle = targetStyle[personaType === 'kind' ? 'kind' : 'tsun'];
 
-    // 1. MCP를 통해 NotebookLM에서 페르소나 및 템플릿 Fetch
-    const persona = await mcpService.fetchNote("[일타강사 페르소나 가이드라인]");
-    const template = await mcpService.fetchNote("[학생 맞춤형 Q&A 템플릿]");
+    // 1. MCP를 통해 NotebookLM에서 페르소나 및 템플릿 Fetch (병렬 처리로 속도 개선)
+    const [persona, template] = await Promise.all([
+      mcpService.fetchNote("[일타강사 페르소나 가이드라인]"),
+      mcpService.fetchNote("[학생 맞춤형 Q&A 템플릿]")
+    ]);
 
     // 2. Persona와 Template을 결합한 System Prompt 구성
     const systemPrompt = `
@@ -50,19 +52,49 @@ If question_context contains { isTimeout: true }, you MUST tell the student that
 "${targetStyle.timeout}" 와 같은 스타일로 팩폭해주세요.
 You must explain the answer and why other options are traps. ${targetStyle.explain}
 
-### FORMATTING CONSTRAINT:
-DO NOT use markdown bold formatting (**) excessively. Avoid surrounding words or phrases with "**" to simply highlight them. Your tone should naturally convey emphasis without relying on excessive Markdown asterisks.
+### FORMATTING RULE:
+- ALWAYS use standard Markdown bold syntax (**word or sentence**) to emphasize keywords or key takeaway sentences.
+- NEVER use symbols like "** ?? **" or other non-standard markers for emphasis. 
+- Focus on making the explanation look clean and professional.
 `;
 
-    // 3. LLM 호출 (History 포함)
     const { history = [] } = req.body;
-    const aiResponse = await llmService.generateChat(systemPrompt, message, history);
 
-    res.json({
-      success: true,
-      reply: aiResponse,
-      credits_used: 1
-    });
+    // 비스트리밍 모드 (React Native 호환)
+    if (!stream) {
+      console.log('[Chat-Tutor] Non-streaming mode for RN client');
+      const reply = await llmService.generateChat(systemPrompt, message, history);
+      return res.json({ success: true, reply });
+    }
+
+    // 스트리밍 모드 (웹 클라이언트)
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const streamResult = await llmService.generateChatStream(systemPrompt, message, history);
+
+    // AI 엔진(DeepSeek/Gemini)에 따른 스트림 처리
+    if (streamResult[Symbol.asyncIterator]) {
+      // OpenAI/DeepSeek 스타일
+      for await (const chunk of streamResult) {
+        const content = chunk.choices?.[0]?.delta?.content || "";
+        if (content) {
+          res.write(`data: ${JSON.stringify({ text: content })}\n\n`);
+        }
+      }
+    } else {
+      // Gemini 스타일 (혹은 이터러블한 스트림)
+      for await (const chunk of streamResult) {
+        const text = typeof chunk.text === 'function' ? chunk.text() : chunk;
+        if (text) {
+          res.write(`data: ${JSON.stringify({ text })}\n\n`);
+        }
+      }
+    }
+
+    res.write('data: [DONE]\n\n');
+    res.end();
 
   } catch (error) {
     console.error("Chat Tutor Error:", error);

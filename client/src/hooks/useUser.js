@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 import useStore from '../store/useStore';
 
 import { API_BASE_URL } from '../config/apiConfig';
@@ -26,10 +27,10 @@ const useUser = () => {
     }
   };
 
-  const rechargeCredits = async (amount, planId) => {
+  const rechargeCredits = async (amount, planId, receipt) => {
     try {
       const response = await axios.post(`${BASE_URL}/credits/recharge`, 
-        { amount, planId },
+        { amount, planId, receipt, platform: Platform.OS },
         { headers: { 'x-user-id': userId } }
       );
       if (response.data.success) {
@@ -42,10 +43,10 @@ const useUser = () => {
     }
   };
 
-  const upgradePremium = async () => {
+  const upgradePremium = async (planId, receipt) => {
     try {
       const response = await axios.post(`${BASE_URL}/credits/upgrade-premium`, 
-        {},
+        { planId, receipt, platform: Platform.OS },
         { headers: { 'x-user-id': userId } }
       );
       if (response.data.success) {
@@ -75,7 +76,28 @@ const useUser = () => {
     }
   };
 
-  return { syncUser, rechargeCredits, upgradePremium, claimReward };
+  const deleteAccount = async () => {
+    try {
+      console.log(`[useUser] Attempting to delete account for user: ${userId}`);
+      console.log(`[useUser] Targeting URL: ${BASE_URL}/user/delete`);
+      
+      const response = await axios.post(`${BASE_URL}/user/delete`, 
+        {}, 
+        { 
+          headers: { 'x-user-id': userId },
+          timeout: 15000 // 15s timeout for deletion
+        }
+      );
+      
+      console.log('[useUser] Account deletion response:', response.data);
+      return response.data.success;
+    } catch (error) {
+      console.error('[useUser] Delete Account Error:', error.response?.status, error.response?.data || error.message);
+      throw error;
+    }
+  };
+
+  return { syncUser, rechargeCredits, upgradePremium, claimReward, deleteAccount };
 };
 
 export default useUser;

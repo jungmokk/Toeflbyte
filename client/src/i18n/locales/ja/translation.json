@@ -104,6 +104,7 @@
     "notification_settings": "通知設定",
     "security_and_auth": "セキュリティと認証",
     "privacy_policy": "プライバシーポリシー",
+    "language_title": "言語",
     "account_delete": "アカウント削除",
     "logout": "ログアウト",
     "logout_confirm": "本当にログアウトしますか？",
@@ -122,7 +123,9 @@
     "reward_notification": "特典とイベント通知",
     "reward_noti_desc": "無料クレジットやイベント情報を受け取ります。",
     "security_active": "セキュリティ設定有効",
-    "security_desc": "現在Googleアカウントで安全にログインされています。追加の認証手段は準備中です。"
+    "security_desc": "現在Googleアカウントで安全にログインされています。追加の認証手段は準備中です。",
+    "account_deleted_msg": "アカウントが正常に削除されました。これまでご利用いただきありがとうございました。",
+    "delete_account_fail": "アカウントの削除中にエラーが発生しました。しばらくしてからもう一度お試しください。"
   },
   "login": {
     "title": "ログイン",

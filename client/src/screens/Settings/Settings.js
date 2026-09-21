@@ -40,12 +40,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
 
-const adUnitId = process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID || TestIds.REWARDED;
+const adUnitId = process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID || 'ca-app-pub-5136549253813943/1333827884';
 
 const Settings = ({ navigation }) => {
   const { credits, persona, setPersona, timerEnabled, setTimerEnabled, isPremium, isAdmin, resetStore } = useStore();
   const { t, i18n } = useTranslation();
-  const { rechargeCredits, upgradePremium, syncUser, claimReward } = useUser();
+  const { rechargeCredits, upgradePremium, syncUser, claimReward, deleteAccount } = useUser();
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [adminMode, setAdminMode] = useState(isAdmin);
@@ -136,10 +136,24 @@ const Settings = ({ navigation }) => {
           text: t('common.delete'), 
           style: 'destructive', 
           onPress: async () => {
-            // In a real app, call backend to delete row
-            await supabase.auth.signOut();
-            resetStore();
-            alert(t('settings.account_deleted_msg')); // add this or just msg
+            try {
+              setLoading(true);
+              // 1. Call backend to delete all DB data
+              const success = await deleteAccount();
+              
+              if (success) {
+                // 2. Sign out from Supabase Auth
+                await supabase.auth.signOut();
+                // 3. Reset local store
+                resetStore();
+                Alert.alert(t('common.confirm'), t('settings.account_deleted_msg') || '계정이 성공적으로 탈퇴 처리되었습니다.');
+              }
+            } catch (error) {
+              console.error('Delete Account Failed:', error);
+              Alert.alert(t('common.error'), t('settings.delete_account_fail') || '계정 탈퇴 처리 중 오류가 발생했습니다.');
+            } finally {
+              setLoading(false);
+            }
           }
         }
       ]
@@ -223,7 +237,7 @@ const Settings = ({ navigation }) => {
 
   const handleOpenPrivacyPolicy = async () => {
     try {
-      const url = 'https://docs.google.com/document/d/1SaJXv_DSszGrnBUGfPA_gwe3K2DFF8Mj6222x-K5GD8/edit?usp=sharing';
+      const url = 'https://jungmokk.github.io/toeflbyte-privacy.html';
       await WebBrowser.openBrowserAsync(url);
     } catch (error) {
       alert(t('settings.privacy_open_error') || 'Failed to open policy page.');

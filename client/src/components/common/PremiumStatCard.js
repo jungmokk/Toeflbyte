@@ -1,21 +1,24 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 import { CreditCard, TrendingUp } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const PremiumStatCard = ({ credits, stats }) => {
+  const { t } = useTranslation();
+  
   return (
     <View style={styles.card}>
       <View style={styles.row}>
         <View style={styles.statItem}>
           <CreditCard color={COLORS.primary} size={20} />
-          <Text style={styles.label}>잔여 크레딧</Text>
+          <Text style={styles.label}>{t('components.remaining_credits')}</Text>
           <Text style={styles.value}>{credits} C</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.statItem}>
           <TrendingUp color={COLORS.success} size={20} />
-          <Text style={styles.label}>주간 성취도</Text>
+          <Text style={styles.label}>{t('components.weekly_progress')}</Text>
           <Text style={styles.value}>{stats}</Text>
         </View>
       </View>

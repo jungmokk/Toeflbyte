@@ -3,7 +3,7 @@
     "name": "TOEFL Byte",
     "slug": "toefl-byte",
     "scheme": "com.toeflbyte.app",
-    "version": "1.0.0",
+    "version": "1.0.10",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.toeflbyte.app",
-      "buildNumber": "4"
+      "buildNumber": "54"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,13 +23,22 @@
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "package": "com.toeflbyte.app",
-      "versionCode": 4,
+      "versionCode": 56,
       "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./withAndroidCoreVersion.js",
+      "@react-native-firebase/app",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosClientId": "743882997184-mj3618u4m4a06q8a8t8m9m7f8p9m7f8.apps.googleusercontent.com",
+          "iosUrlScheme": "com.googleusercontent.apps.743882997184-mj3618u4m4a06q8a8t8m9m7f8p9m7f8"
+        }
+      ],
       "expo-web-browser",
       [
         "react-native-google-mobile-ads",
@@ -39,7 +48,22 @@
           "userTrackingUsageDescription": "This identifier will be used to provide you personalized ads."
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "react-native-iap",
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "26625490523747339",
+          "clientToken": "YOUR_FACEBOOK_CLIENT_TOKEN",
+          "displayName": "TOEFL Byte",
+          "scheme": "fb26625490523747339",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingPermission": "학습 경험 개선 및 맞춤형 광고 제공을 위해 권한이 필요합니다."
+        }
+      ],
+      "expo-tracking-transparency"
     ],
     "extra": {
       "eas": {

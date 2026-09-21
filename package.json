@@ -1,0 +1,10 @@
+{
+  "name": "toefl-study-workspace",
+  "version": "1.0.0",
+  "description": "TOEFL Byte Workspace Utilities",
+  "private": true,
+  "scripts": {
+    "keepalive": "node scripts/keep-alive.js",
+    "ping": "node scripts/keep-alive.js --once"
+  }
+}

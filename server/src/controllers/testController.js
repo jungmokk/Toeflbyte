@@ -4,156 +4,268 @@ import llmService from '../services/llmService.js';
 import path from 'path';
 import fs from 'fs/promises';
 
-export const generateBite = async (req, res) => {
+// [Internal Helper] TOEFL 공식 유형 정의
+const TOEFL_QUESTION_TYPES = [
+  { 
+    name: "Factual Information", 
+    desc: "According to the passage, [X] happened because...",
+    rule: "Find the specific detail stated explicitly in the passage."
+  },
+  { 
+    name: "Negative Factual Information", 
+    desc: "Which of the following is NOT True about [X]?",
+    rule: "Use 'EXCEPT' or 'NOT' in the question. Three options must be true, one must be false or not mentioned."
+  },
+  { 
+    name: "Inference", 
+    desc: "Which of the following can be inferred about [X]?",
+    rule: "The answer is not explicitly stated but strongly implied by the facts."
+  },
+  { 
+    name: "Rhetorical Purpose", 
+    desc: "The author mentions [X] in order to...",
+    rule: "Analyze WHY the author included special information or examples."
+  },
+  { 
+    name: "Vocabulary", 
+    desc: "The word [X] is closest in meaning to...",
+    rule: "Pick a synonym that fits the context of the passage."
+  },
+  { 
+    name: "Reference", 
+    desc: "The word [it/they/which] refers to...",
+    rule: "Identify the antecedent of a pronoun or relative pronoun."
+  },
+  { 
+    name: "Sentence Simplification", 
+    desc: "Which of the following best expresses the essential information...",
+    rule: "Pick the option that keeps all core information but removes unnecessary details without changing meaning."
+  },
+  { 
+    name: "Insert Text", 
+    desc: "[■] square bracket placement question.",
+    rule: "Provide a sentence to be inserted and mark 4 potential places in the passage with [A], [B], [C], [D] or [■]."
+  }
+];
+
+// [Internal Helper] AI를 통해 문제를 생성하고 DB에 저장하는 함수
+const generateAndSaveNewBite = async (topic, type, activeUserId, language, persona = 'tsun', mode = 'db') => {
   try {
-    const { topic = "General Science", userId, persona = 'tsun', type = 'FULL', language = 'ko' } = req.body;
+    // 1. 유형 랜덤 선택
+    const selectedType = TOEFL_QUESTION_TYPES[Math.floor(Math.random() * TOEFL_QUESTION_TYPES.length)];
     
-    const activeUserId = userId || req.headers['x-user-id'];
-    
-    // 1. 해당 유저가 이미 푼 문제 ID 목록 가져오기
-    const { data: solvedResults, error: solvedError } = await supabase
-      .from('BiteResult')
-      .select('questionId')
-      .eq('userId', activeUserId);
-    
-    if (solvedError) throw solvedError;
-    const solvedIds = solvedResults ? solvedResults.map(r => r.questionId) : [];
-
-    // 2. DB 중심: 해당 주제와 타입에 맞는 문제들 검색
-    let query = supabase.from('BiteQuestion').select('*').eq('type', type);
-    
-    if (topic && topic !== "General Science") {
-       query = query.eq('topic', topic);
-    }
-    
-    let { data: questions, error: fetchError } = await query;
-    
-    if (fetchError) throw fetchError;
-
-    // 3. 자바스크립트 레벨에서 안 푼 문제 필터링 (DB 필터보다 더 확실함)
-    const solvedIdsSet = new Set(solvedIds.map(id => String(id)));
-    const unsolvedQuestions = (questions || []).filter(q => !solvedIdsSet.has(String(q.id)));
-
-    if (unsolvedQuestions.length > 0) {
-      // 안 푼 문제 중 랜덤으로 하나 선택 (매번 똑같은 최신 문제만 나오지 않게 함)
-      const randomIndex = Math.floor(Math.random() * unsolvedQuestions.length);
-      const existingQuestion = unsolvedQuestions[randomIndex];
-      
-      console.log(`[DB-Hit] Found ${unsolvedQuestions.length} unsolved questions for topic: ${topic}. Choosing random index: ${randomIndex}`);
-      
-      const content = typeof existingQuestion.content_json === 'string' 
-        ? JSON.parse(existingQuestion.content_json) 
-        : existingQuestion.content_json;
-
-      return res.json({
-        success: true,
-        data: {
-          ...content,
-          id: existingQuestion.id,
-          topic: existingQuestion.topic
-        },
-        reused: true,
-        credits_used: 0 
-      });
+    // 2. 시사(Current Affairs) 테마 처리: 최신 뉴스 로드
+    let newsContext = "";
+    if (topic === "Current Affairs" || topic === "시사" || topic === "Hot Topics") {
+      try {
+        const newsPath = path.join(process.cwd(), 'src', 'config', 'news_context.json');
+        const newsData = JSON.parse(await fs.readFile(newsPath, 'utf8'));
+        // 무작위 뉴스 하나 선택
+        const selectedNews = newsData[Math.floor(Math.random() * newsData.length)];
+        newsContext = `RECENT NEWS CONTEXT (from ${selectedNews.date}):\n${selectedNews.title}: ${selectedNews.content}`;
+        topic = `Academic News: ${selectedNews.topic}`;
+      } catch (e) {
+        console.warn("[Background-Task] News context load failed, using general topic.");
+      }
     }
 
-    // 4. AI 기반 신규 생성 (DB에 안 푼 문제가 없을 때만)
-    console.log(`[Hybrid-Flow] No unsolved DB match (Solved: ${solvedIds.length}, Total in DB: ${questions?.length || 0}). Generating new ${type} from AI for topic: ${topic}`);
+    console.log(`[Background-Task] Generating new '${selectedType.name}' bite for ${topic}`);
+    
+    // 3. 가이드라인 및 규칙 로드
     const lengthGuideline = type === 'SHORT' 
-      ? "PASSAGE LENGTH: Maximum 100 words. Focus on a single summary paragraph. Achieve a 1-minute completion time."
-      : "PASSAGE LENGTH: 150-200 words. standard TOEFL short-form style.";
-
-    console.log(`[Hybrid-Flow] No unsolved DB match. Fetching new ${type} from AI for topic: ${topic}`);
+      ? "PASSAGE LENGTH: Maximum 100 words."
+      : "PASSAGE LENGTH: 150-200 words.";
 
     const writingRule = await mcpService.fetchNote("[토플 단일 문단 출제규칙]");
     const distractorRule = await mcpService.fetchNote("[유형별 오답 설계 공식]");
-    const referenceSample = await mcpService.fetchNote("[토플 문제풀이 핵심로직]");
-
     const masterPromptPath = path.join(process.cwd(), '..', 'Toefl', '숏폼 토플 마스터 프롬프트.md');
-    // For Render compatibility (deployment structure might vary)
-    const alternativePromptPath = path.resolve(process.cwd(), 'Toefl', '숏폼 토플 마스터 프롬프트.md');
     
     let masterPrompt = "";
-    try {
-      masterPrompt = await fs.readFile(masterPromptPath, 'utf8');
-    } catch (e) {
-      try {
-        masterPrompt = await fs.readFile(alternativePromptPath, 'utf8');
-      } catch (e2) {
-        console.error("Master prompt not found, using fallback short prompt");
-        masterPrompt = "Generate a TOEFL bite-sized question. JSON format.";
-      }
+    try { masterPrompt = await fs.readFile(masterPromptPath, 'utf8'); } catch (e) {
+      masterPrompt = "Generate a TOEFL bite-sized question. JSON format.";
     }
 
     const langNames = { ko: "Korean", ja: "Japanese", "zh-TW": "Traditional Chinese (Taiwan)" };
     const targetLang = langNames[language] || "Korean";
 
-    // Dynamic context overriding for PREMIUM_PREDICT
-    let actualTopic = topic;
-    let premiumContextPrompt = "";
-    if (topic === 'PREMIUM_2026') {
-      const currentYear = new Date().getFullYear();
-      actualTopic = "2026 Hot Trends in Science and Society";
-      premiumContextPrompt = `CRITICAL: You MUST base this question strictly on cutting-edge topics highly likely to appear in the ${currentYear} TOEFL reading section (e.g., advanced AI ethics, novel renewable energy technologies, modern sociological shifts, or latest space discoveries). Make it challenging and sophisticated.`;
-    }
+    const premiumInstruction = mode === 'ai' 
+      ? `### PREMIUM PREDICTION MODE:
+- Focus on "2026 Academic Trends" and "Recent Scientific Discoveries".
+- Create a "Killer Question" with higher difficulty.
+- The tone should be slightly more advanced than standard TOEFL.`
+      : "### STANDARD MODE: Verified exam-level difficulty.";
 
     const systemPrompt = `
 ${masterPrompt}
+${premiumInstruction}
+### NEWS CONTEXT: ${newsContext || "General academic knowledge"}
+### TOEFL QUESTION TYPE: ${selectedType.name}
+### DESCRIPTION: ${selectedType.desc}
+### SPECIFIC RULE: ${selectedType.rule}
+### FORMAT: ${lengthGuideline}
+### RULES: ${writingRule}
+### DISTRACTORS: ${distractorRule}
 
-### SPECIFIC FORMAT RULES:
-${lengthGuideline}
-
-### REFERENCE DATA FROM KNOWLEDGE BASE (MCP):
-- WRITING RULES: ${writingRule}
-- DISTRACTOR FORMULAS: ${distractorRule}
-
-### CRITICAL GENERATION GUIDELINES:
-1. JSON Output: You MUST output the response in EXACT JSON format.
-2. Language: The passage, question, and options MUST be in English. However, the 'explanation' field MUST be written in ${targetLang}.
-${premiumContextPrompt}
+Respond in JSON ONLY. The 'explanation' field must be written in ${targetLang}. 
+The JSON must include a "questionType" field matching EXACTLY one of the 8 types above.
+If the news context is provided, you MUST base the passage and question on that news.
 `;
+    const userPrompt = `주제 '${topic}'에 기반하여 ${selectedType.name} 유형의 토플 문제 1세트를 생성해 줘.`;
 
-    const userPrompt = `주제 '${actualTopic}'에 기반하여 ${type === 'SHORT' ? '1분 숏 바이트(요약형)' : '표준 숏폼'} 토플 문제 1세트를 생성해 줘. 해설(explanation)은 반드시 ${targetLang}(으)로 작성해야 해.`;
-
+    // 4. AI 호출
     const result = await llmService.generateFast(systemPrompt, userPrompt, "qwen-plus");
+    if (!result) return null;
 
-    // 4. 생성된 결과를 DB에 저장 (Reusable for future users)
-    let savedQuestion = null;
+    // 5. DB 저장
+    let savedId = 'gen-' + Date.now();
     
-    if (activeUserId) {
-      const { data: newQuestion, error: saveError } = await supabase
-        .from('BiteQuestion')
-        .insert([{
-          userId: activeUserId,
-          topic: topic,
-          type: type,
-          content_json: JSON.stringify(result)
-        }])
-        .select()
-        .single();
-      
-      if (saveError) {
-        console.error("Save Bite DB Error (ignored for response):", saveError);
-      } else {
-        savedQuestion = newQuestion;
-      }
+    // activeUserId가 없으면 'system' 대신 null을 사용 (UUID 타입 매칭을 위함)
+    const dbUserId = (activeUserId && activeUserId !== 'system') ? activeUserId : null;
+
+    const { data: newQuestion, error: saveError } = await supabase
+      .from('BiteQuestion')
+      .insert([{
+        userId: dbUserId,
+        topic: topic,
+        type: type,
+        content_json: JSON.stringify({ ...result, questionType: selectedType.name, isCurrentAffair: !!newsContext })
+      }])
+      .select()
+      .single();
+
+    if (saveError) console.error("[Background-Task] Save failed:", saveError.message);
+    else {
+      savedId = newQuestion.id;
+      console.log(`[Background-Task] Successfully added new ${selectedType.name} to DB. (ID: ${savedId}${newsContext ? ", NEWS-based" : ""})`);
     }
+
+    // 5. 단어장 자동 캐싱
+    if (result.keyWords) {
+      const dictionaryEntries = result.keyWords.map(kw => ({
+        word: kw.word.toLowerCase().trim(),
+        meaning: kw.meaning,
+        example: `Context: ${result.passage.substring(0, 30)}...` 
+      }));
+      supabase.from('Dictionary').upsert(dictionaryEntries, { onConflict: 'word' }).then(() => {});
+    }
+
+    return { ...result, id: savedId, questionType: selectedType.name };
+
+  } catch (error) {
+    console.error("[Background-Task] ERROR:", error.message);
+    return null;
+  }
+};
+
+export const generateBite = async (req, res) => {
+  try {
+    const { topic = "General Science", userId, persona = 'tsun', type = 'FULL', language = 'ko', mode = 'db' } = req.body;
+    const activeUserId = userId || req.headers['x-user-id'];
+    
+    // PREMIUM: If mode is 'ai', skip DB search and always generate synchronously
+    if (mode === 'ai') {
+      console.log(`[Premium-AI] Forcing real-time AI generation for premium topic: ${topic}`);
+      const result = await generateAndSaveNewBite(topic, type, activeUserId, language, persona, mode);
+      
+      if (!result) throw new Error("AI Generation failed.");
+
+      return res.json({
+        success: true,
+        data: { ...result, topic: topic },
+        reused: false,
+        credits_used: 5 
+      });
+    }
+
+    // 0. 연속 카테고리 방지: 유저의 마지막으로 푼 문제 토픽 조회
+    let lastSolvedTopic = null;
+    try {
+      const { data: lastResult } = await supabase
+        .from('BiteResult')
+        .select('questionId, question:BiteQuestion(topic)')
+        .eq('userId', activeUserId)
+        .order('solvedAt', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (lastResult?.question?.topic) {
+        lastSolvedTopic = lastResult.question.topic;
+        console.log(`[Anti-Repeat] Last solved topic: "${lastSolvedTopic}", will try to avoid.`);
+      }
+    } catch (e) {
+      // 조회 실패해도 무시하고 진행
+    }
+
+    // 1. RPC를 통한 효율적인 DB 검색 (DB 레벨에서 안 푼 문제 중 랜덤 1개 추출)
+    console.log(`[Standard-DB] Searching library via RPC for topic: ${topic}, userId: ${activeUserId}`);
+    
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_random_unsolved_bite', {
+      p_user_id: activeUserId,
+      p_topic: topic,
+      p_type: type
+    });
+
+    if (rpcError) {
+      console.error("[RPC-Error] get_random_unsolved_bite failed:", rpcError.message);
+    } else if (rpcData && rpcData.length > 0) {
+      // 연속 카테고리 방지 필터: 같은 토픽이면 다른 후보 찾기
+      let selected = rpcData[0];
+      if (lastSolvedTopic && rpcData.length > 1 && selected.topic === lastSolvedTopic) {
+        const altCandidate = rpcData.find(q => q.topic !== lastSolvedTopic);
+        if (altCandidate) {
+          selected = altCandidate;
+          console.log(`[Anti-Repeat] Swapped to different topic: "${selected.topic}"`);
+        }
+      }
+      console.log(`[DB-Hit] Serving ${selected.id} from library (RPC).`);
+
+      return res.json({
+        success: true,
+        data: {
+          ...JSON.parse(selected.content_json),
+          id: selected.id,
+          topic: selected.topic
+        },
+        reused: true,
+        credits_used: 2 
+      });
+    }
+
+    // [Fallback] RPC 결과가 없으면 전체 풀에서 랜덤하게 하나 선택 (중복 허용 가능성 있음)
+    console.log(`[DB-Miss] No unsolved questions found via RPC. falling back to pool...`);
+    const { data: fallbackPool } = await supabase.from('BiteQuestion').select('*').eq('type', type).limit(10);
+    
+    if (fallbackPool && fallbackPool.length > 0) {
+      // 연속 카테고리 방지: 다른 토픽 우선 선택
+      let candidates = fallbackPool;
+      if (lastSolvedTopic) {
+        const differentTopic = fallbackPool.filter(q => q.topic !== lastSolvedTopic);
+        if (differentTopic.length > 0) candidates = differentTopic;
+      }
+      const selected = candidates[Math.floor(Math.random() * candidates.length)];
+      return res.json({
+        success: true,
+        data: {
+          ...JSON.parse(selected.content_json),
+          id: selected.id,
+          topic: selected.topic
+        },
+        reused: true,
+        credits_used: 2
+      });
+    }
+
+    // If DB is completely empty and we're in 'db' mode, we might still generate once to seed the pool
+    console.log(`[DB-Miss] No questions in library. Seeding first question via AI...`);
+    const result = await generateAndSaveNewBite(topic, type, activeUserId, language, persona, mode);
+
+    if (!result) throw new Error("AI Generation failed and DB was empty.");
 
     res.json({
       success: true,
-      data: {
-        ...result,
-        id: savedQuestion?.id || result.id || 'gen-' + Date.now(),
-        topic: topic
-      },
+      data: { ...result, topic: topic },
       reused: false,
-      credits_used: 5,
-      debug: {
-        activeUserId,
-        solvedCount: solvedIds.length,
-        poolSize: questions?.length || 0,
-        unsolvedCount: unsolvedQuestions.length
-      }
+      credits_used: 2 
     });
 
   } catch (error) {
@@ -278,20 +390,26 @@ export const getRandomBites = async (req, res) => {
     if (solvedError && solvedError.code !== 'PGRST116') {
       console.warn("Solved fetching error, proceeding anyway:", solvedError);
     }
-    const solvedIds = new Set((solvedResults || []).map(r => String(r.questionId)));
+    const solvedIds = (solvedResults || []).map(r => String(r.questionId));
     
-    const { data: questions, error } = await supabase.from('BiteQuestion').select('*');
-    if (error) throw error;
+    let query = supabase.from('BiteQuestion').select('*');
     
-    const unsolved = (questions || []).filter(q => !solvedIds.has(String(q.id)));
-    
-    // Fisher-Yates shuffle for true uniform randomness
-    for (let i = unsolved.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [unsolved[i], unsolved[j]] = [unsolved[j], unsolved[i]];
+    // DB 수준에서 고도화된 필터링
+    if (solvedIds.length > 0) {
+      query = query.not('id', 'in', `(${solvedIds.join(',')})`);
     }
     
-    const selected = unsolved.slice(0, limit);
+    const { data: unsolved, error } = await query.limit(limit * 2); // 랜덤 추출 보정을 위해 여유있게 가져옴
+    if (error) throw error;
+    
+    // Fisher-Yates shuffle for true uniform randomness
+    const shuffled = [...(unsolved || [])];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    const selected = shuffled.slice(0, limit);
     
     res.json({ success: true, data: selected });
   } catch (err) {
